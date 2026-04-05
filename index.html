@@ -616,6 +616,104 @@
     }
     .loc-btn:active { opacity: 0.75; }
 
+    /* ── Language buttons ────────────────────────── */
+    .lang-row {
+        display: flex;
+        gap: 4px;
+        justify-content: center;
+        margin-top: 8px;
+    }
+    .lang-btn {
+        background: var(--bg-card);
+        border: 1px solid var(--border);
+        border-radius: 6px;
+        font-size: 28px;
+        line-height: 1;
+        padding: 4px 8px;
+        cursor: pointer;
+        opacity: 0.5;
+        transition: opacity 0.15s, border-color 0.15s, background 0.15s;
+    }
+    .lang-btn:hover { opacity: 0.85; background: var(--bg-card-hover); }
+    .lang-btn-active {
+        opacity: 1;
+        border-color: var(--accent);
+        background: var(--accent-dim);
+    }
+
+    /* ── Location picker menu ────────────────────── */
+    .loc-menu-wrap {
+        position: relative;
+        display: inline-block;
+    }
+    .loc-menu-btn {
+        background: var(--bg-card);
+        border: 1px solid var(--border-lit);
+        border-radius: 8px;
+        color: var(--text);
+        font-family: 'JetBrains Mono', monospace;
+        font-size: 11px;
+        letter-spacing: 0.08em;
+        padding: 7px 14px;
+        cursor: pointer;
+        transition: background 0.15s, border-color 0.15s;
+        white-space: nowrap;
+    }
+    .loc-menu-btn:hover { background: var(--bg-card-hover); border-color: var(--accent); }
+    .loc-menu-panel {
+        position: fixed;
+        z-index: 2000;
+        background: var(--bg);
+        border: 1px solid var(--border-lit);
+        border-radius: 10px;
+        box-shadow: 0 8px 32px rgba(0,0,0,0.45);
+        min-width: 200px;
+        overflow: hidden;
+        display: none;
+    }
+    .loc-menu-panel.open { display: block; }
+    .loc-country {
+        padding: 10px 14px 6px;
+        font-family: 'Bebas Neue', sans-serif;
+        font-size: 13px;
+        letter-spacing: 0.25em;
+        color: var(--accent);
+        border-bottom: 1px solid var(--border);
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        user-select: none;
+    }
+    .loc-country:hover { background: var(--bg-card-hover); }
+    .loc-country-arrow { font-size: 10px; transition: transform 0.2s; }
+    .loc-country.expanded .loc-country-arrow { transform: rotate(90deg); }
+    .loc-regions {
+        display: none;
+        flex-direction: column;
+        max-height: 260px;
+        overflow-y: auto;
+    }
+    .loc-regions.open { display: flex; }
+    .loc-region-item {
+        padding: 7px 22px;
+        font-family: 'JetBrains Mono', monospace;
+        font-size: 10px;
+        letter-spacing: 0.06em;
+        color: var(--text-dim);
+        cursor: pointer;
+        transition: background 0.12s, color 0.12s;
+        border-left: 2px solid transparent;
+    }
+    .loc-region-item:hover {
+        background: var(--bg-card-hover);
+        color: var(--text);
+        border-left-color: var(--accent);
+    }
+    .loc-regions::-webkit-scrollbar { width: 4px; }
+    .loc-regions::-webkit-scrollbar-track { background: transparent; }
+    .loc-regions::-webkit-scrollbar-thumb { background: var(--border-lit); border-radius: 4px; }
+
     /* ── Loading & Error ─────────────────────────── */
     .state-view {
         flex: 1;
@@ -749,9 +847,16 @@
                 <div class="dot"></div>
             </div>
             <div class="state-label" id="state-label">Acquiring Signal</div>
-            <div id="loc-actions" style="display:none;display:none;flex-direction:column;align-items:center;gap:8px;margin-top:8px">
-                <button class="loc-btn" onclick="requestLocation()">&#x1F4CD; Standort freigeben</button>
-                <button class="loc-btn" style="background:var(--bg-card);border:1px solid var(--border);color:var(--text-dim);font-size:10px;padding:7px 16px" onclick="init(52.52,13.405,true)">Berlin verwenden</button>
+            <div id="loc-actions" style="display:none;flex-direction:column;align-items:center;gap:8px;margin-top:8px">
+                <button class="loc-btn" id="loc-btn-geo" onclick="requestLocation()">&#x1F4CD; Standort freigeben</button>
+                <div class="loc-menu-wrap" id="loc-picker-wrap-init">
+                    <button class="loc-menu-btn" onclick="toggleLocMenuInit(this)">&#x1F5FA; <span id="loc-list-btn-text">Ort aus Liste wählen</span></button>
+                </div>
+                <div class="lang-row" style="margin-top:4px">
+                    <button class="lang-btn" data-lang="de" onclick="setLang('de')" title="Deutsch">🇩🇪</button>
+                    <button class="lang-btn" data-lang="en" onclick="setLang('en')" title="English">🇬🇧</button>
+                    <button class="lang-btn" data-lang="it" onclick="setLang('it')" title="Italiano">🇮🇹</button>
+                </div>
             </div>
         </div>
     </div>
@@ -794,6 +899,8 @@ const LANGS = {
     snowfall:'Snowfall', snowDepth:'Snow depth equivalent', wmoCode:'WMO Code',
     history24h:'24-Hour History', temperature:'Temperature', updated:'Updated',
     geoDefault:'Geolocation denied \u2014 using default',
+    locPickBtn:'Select location', locListBtn:'Choose from list',
+    themeLight:'LIGHT', themeDark:'DARK',
     wmo:{0:'Clear Sky',1:'Mainly Clear',2:'Partly Cloudy',3:'Overcast',45:'Fog',48:'Rime Fog',
       51:'Light Drizzle',53:'Drizzle',55:'Dense Drizzle',56:'Light Freezing Drizzle',57:'Freezing Drizzle',
       61:'Slight Rain',63:'Rain',65:'Heavy Rain',66:'Light Freezing Rain',67:'Freezing Rain',
@@ -818,6 +925,8 @@ const LANGS = {
     snowfall:'Schneefall', snowDepth:'\xc4quiv. Schneeh\xf6he', wmoCode:'WMO-Code',
     history24h:'24-Stunden-Verlauf', temperature:'Temperatur', updated:'Aktualisiert',
     geoDefault:'Standort nicht verf\xfcgbar \u2014 Standard',
+    locPickBtn:'Ort w\xe4hlen', locListBtn:'Ort aus Liste w\xe4hlen',
+    themeLight:'HELL', themeDark:'DUNKEL',
     wmo:{0:'Klarer Himmel',1:'\xdcberwiegend klar',2:'Teils bew\xf6lkt',3:'Bedeckt',
       45:'Nebel',48:'Reifnebel',51:'Leichter Nieselregen',53:'Nieselregen',55:'Starker Nieselregen',
       56:'Leichter Gefriernieseln',57:'Gefriernieseln',61:'Leichter Regen',63:'Regen',65:'Starker Regen',
@@ -890,6 +999,8 @@ const LANGS = {
     snowfall:'Nevicata', snowDepth:'Equivalente neve', wmoCode:'Codice OMM',
     history24h:'Storico 24 ore', temperature:'Temperatura', updated:'Aggiornato',
     geoDefault:'Geolocalizzazione negata \u2014 predefinito',
+    locPickBtn:'Scegli luogo', locListBtn:'Scegli dalla lista',
+    themeLight:'CHIARO', themeDark:'SCURO',
     wmo:{0:'Cielo sereno',1:'Prevalentemente sereno',2:'Parzialmente nuvoloso',3:'Coperto',
       45:'Nebbia',48:'Nebbia gelata',51:'Pioggerella leggera',53:'Pioggerella',55:'Pioggerella intensa',
       56:'Pioggerella gelante lieve',57:'Pioggerella gelante',61:'Pioggia debole',63:'Pioggia',65:'Pioggia intensa',
@@ -1170,16 +1281,39 @@ const LANGS = {
   },
 };
 
-const _L = (() => {
+let currentLang = (() => {
+    const saved = localStorage.getItem('meteo-lang');
+    if (saved && LANGS[saved]) return saved;
     const code = navigator.language.split('-')[0];
-    return LANGS[code] || LANGS.en;
+    return LANGS[code] ? code : 'en';
 })();
-function t(key) { return _L[key] ?? LANGS.en[key] ?? key; }
+
+function t(key) { return LANGS[currentLang]?.[key] ?? LANGS.en[key] ?? key; }
+
+function setLang(code) {
+    if (!LANGS[code]) return;
+    currentLang = code;
+    localStorage.setItem('meteo-lang', code);
+    document.querySelectorAll('.lang-btn').forEach(b => {
+        b.classList.toggle('lang-btn-active', b.dataset.lang === code);
+    });
+    // update static text in loading state
+    const stateLabel = document.getElementById('state-label');
+    if (stateLabel) stateLabel.textContent = t('acquiring');
+    const listSpan = document.getElementById('loc-list-btn-text');
+    if (listSpan) listSpan.textContent = t('locListBtn');
+    // re-render if data available
+    if (lastRenderArgs) render(...lastRenderArgs);
+}
 
 // Apply language to static DOM elements (t() now available)
 document.querySelector('.state-label').textContent = t('acquiring');
 const _locNameEl = document.getElementById('loc-name');
 if (_locNameEl) _locNameEl.textContent = t('locating');
+// Mark active lang button in loading state
+document.querySelectorAll('.lang-btn[data-lang]').forEach(b => {
+    b.classList.toggle('lang-btn-active', b.dataset.lang === currentLang);
+});
 
 /* ── WMO icons + helpers ────────────────────────── */
 const WMO_ICONS = {
@@ -1192,7 +1326,7 @@ const WMO_ICONS = {
 };
 
 function wmo(code) {
-    return { text: (_L.wmo?.[code] ?? LANGS.en.wmo[code] ?? `Code ${code}`), icon: WMO_ICONS[code] || '🌡️' };
+    return { text: (LANGS[currentLang]?.wmo?.[code] ?? LANGS.en.wmo[code] ?? `Code ${code}`), icon: WMO_ICONS[code] || '🌡️' };
 }
 
 /* ── Helpers ────────────────────────────────────── */
@@ -1436,7 +1570,17 @@ function render(data, locName, lat, lon) {
             <div class="seg7-location">
                 <div class="seg7-loc-name">${locName}</div>
                 <div class="seg7-loc-coords">${lat.toFixed(4)}° ${lat >= 0 ? 'N' : 'S'} &nbsp;·&nbsp; ${Math.abs(lon).toFixed(4)}° ${lon >= 0 ? 'E' : 'W'}</div>
-                <button class="theme-btn" id="theme-btn" style="margin-top:10px;background:${dark ? 'linear-gradient(135deg,#ff6535 0%,#ffbb3b 100%)' : 'linear-gradient(135deg,#1e3a8a 0%,#7c3aed 100%)'}">${dark ? '☀&thinsp;LIGHT' : '☽&thinsp;DARK'}</button>
+                <div style="display:flex;gap:8px;margin-top:10px;align-items:center;justify-content:center;flex-wrap:wrap">
+                    <button class="theme-btn" id="theme-btn" style="background:${dark ? 'linear-gradient(135deg,#ff6535 0%,#ffbb3b 100%)' : 'linear-gradient(135deg,#1e3a8a 0%,#7c3aed 100%)'}">${dark ? '☀&thinsp;' + t('themeLight') : '☽&thinsp;' + t('themeDark')}</button>
+                    <div class="loc-menu-wrap" id="loc-picker-wrap">
+                        <button class="loc-menu-btn" onclick="toggleLocMenu(this)">&#x1F4CD; ${t('locPickBtn')}</button>
+                    </div>
+                </div>
+                <div class="lang-row">
+                    <button class="lang-btn${currentLang==='de'?' lang-btn-active':''}" data-lang="de" onclick="setLang('de')" title="Deutsch">🇩🇪</button>
+                    <button class="lang-btn${currentLang==='en'?' lang-btn-active':''}" data-lang="en" onclick="setLang('en')" title="English">🇬🇧</button>
+                    <button class="lang-btn${currentLang==='it'?' lang-btn-active':''}" data-lang="it" onclick="setLang('it')" title="Italiano">🇮🇹</button>
+                </div>
             </div>
         </div>
 
@@ -1724,13 +1868,13 @@ async function fetchWeather(lat, lon) {
 }
 
 /* ── Init ───────────────────────────────────────── */
-async function init(lat, lon, fallback) {
+async function init(lat, lon, fallback, fixedName) {
     try {
-        const [data, name] = await Promise.all([
+        const [data, geoName] = await Promise.all([
             fetchWeather(lat, lon),
-            geocode(lat, lon)
+            fixedName ? Promise.resolve(fixedName.toUpperCase()) : geocode(lat, lon)
         ]);
-        render(data, name, lat, lon);
+        render(data, geoName, lat, lon);
     } catch (e) {
         document.getElementById('root').innerHTML = `
             <div class="state-view">
@@ -1740,6 +1884,282 @@ async function init(lat, lon, fallback) {
             </div>`;
     }
 }
+
+/* ── Location picker data ───────────────────────── */
+const LOCATIONS = [
+    {
+        names: { de: 'Österreich 🇦🇹', en: 'Austria 🇦🇹', it: 'Austria 🇦🇹' },
+        regions: [
+            { name: 'Burgenland',       en: 'Burgenland',     it: 'Burgenland',      lat: 47.5116, lon: 16.5344 },
+            { name: 'Kärnten',          en: 'Carinthia',      it: 'Carinzia',        lat: 46.6167, lon: 14.3000 },
+            { name: 'Niederösterreich', en: 'Lower Austria',  it: 'Bassa Austria',   lat: 48.1072, lon: 15.8047 },
+            { name: 'Oberösterreich',   en: 'Upper Austria',  it: 'Alta Austria',    lat: 48.3069, lon: 14.2858 },
+            { name: 'Salzburg',         en: 'Salzburg',       it: 'Salisburgo',      lat: 47.8095, lon: 13.0550 },
+            { name: 'Steiermark',       en: 'Styria',         it: 'Stiria',          lat: 47.0707, lon: 15.4395 },
+            { name: 'Tirol',            en: 'Tyrol',          it: 'Tirolo',          lat: 47.2692, lon: 11.4041 },
+            { name: 'Vorarlberg',       en: 'Vorarlberg',     it: 'Vorarlberg',      lat: 47.2490, lon: 9.9797  },
+            { name: 'Wien',             en: 'Vienna',         it: 'Vienna',          lat: 48.2083, lon: 16.3731 },
+        ]
+    },
+    {
+        names: { de: 'Schweiz 🇨🇭', en: 'Switzerland 🇨🇭', it: 'Svizzera 🇨🇭' },
+        regions: [
+            { name: 'Aargau',           en: 'Aargau',                    it: 'Argovia',               lat: 47.3887, lon: 8.0440  },
+            { name: 'Appenzell A.Rh.',  en: 'Appenzell Outer Rhodes',    it: 'Appenzello Esterno',    lat: 47.3661, lon: 9.3127  },
+            { name: 'Appenzell I.Rh.',  en: 'Appenzell Inner Rhodes',    it: 'Appenzello Interno',    lat: 47.3303, lon: 9.4115  },
+            { name: 'Basel-Landschaft', en: 'Basel-Country',             it: 'Basilea Campagna',      lat: 47.4837, lon: 7.7026  },
+            { name: 'Basel-Stadt',      en: 'Basel-City',                it: 'Basilea Città',         lat: 47.5596, lon: 7.5886  },
+            { name: 'Bern',             en: 'Bern',                      it: 'Berna',                 lat: 46.9480, lon: 7.4474  },
+            { name: 'Fribourg',         en: 'Fribourg',                  it: 'Friburgo',              lat: 46.8065, lon: 7.1620  },
+            { name: 'Genf',             en: 'Geneva',                    it: 'Ginevra',               lat: 46.2044, lon: 6.1432  },
+            { name: 'Glarus',           en: 'Glarus',                    it: 'Glarona',               lat: 47.0405, lon: 9.0680  },
+            { name: 'Graubünden',       en: 'Graubünden',                it: 'Grigioni',              lat: 46.8566, lon: 9.5300  },
+            { name: 'Jura',             en: 'Jura',                      it: 'Giura',                 lat: 47.3537, lon: 7.1544  },
+            { name: 'Luzern',           en: 'Lucerne',                   it: 'Lucerna',               lat: 47.0502, lon: 8.3093  },
+            { name: 'Neuenburg',        en: 'Neuchâtel',                 it: 'Neuchâtel',             lat: 46.9920, lon: 6.9312  },
+            { name: 'Nidwalden',        en: 'Nidwalden',                 it: 'Nidvaldo',              lat: 46.9265, lon: 8.3854  },
+            { name: 'Obwalden',         en: 'Obwalden',                  it: 'Obvaldo',               lat: 46.8981, lon: 8.2514  },
+            { name: 'Schaffhausen',     en: 'Schaffhausen',              it: 'Sciaffusa',             lat: 47.6963, lon: 8.6333  },
+            { name: 'Schwyz',           en: 'Schwyz',                    it: 'Svitto',                lat: 47.0202, lon: 8.6572  },
+            { name: 'Solothurn',        en: 'Solothurn',                 it: 'Soletta',               lat: 47.2088, lon: 7.5323  },
+            { name: 'St. Gallen',       en: 'St. Gallen',                it: 'San Gallo',             lat: 47.4245, lon: 9.3767  },
+            { name: 'Tessin',           en: 'Ticino',                    it: 'Ticino',                lat: 46.1985, lon: 9.0219  },
+            { name: 'Thurgau',          en: 'Thurgau',                   it: 'Turgovia',              lat: 47.5535, lon: 9.0556  },
+            { name: 'Uri',              en: 'Uri',                       it: 'Uri',                   lat: 46.8886, lon: 8.6347  },
+            { name: 'Waadt',            en: 'Vaud',                      it: 'Vaud',                  lat: 46.5197, lon: 6.6323  },
+            { name: 'Wallis',           en: 'Valais',                    it: 'Vallese',               lat: 46.2270, lon: 7.3590  },
+            { name: 'Zug',              en: 'Zug',                       it: 'Zugo',                  lat: 47.1662, lon: 8.5156  },
+            { name: 'Zürich',           en: 'Zurich',                    it: 'Zurigo',                lat: 47.3769, lon: 8.5417  },
+        ]
+    },
+    {
+        names: { de: 'Deutschland 🇩🇪', en: 'Germany 🇩🇪', it: 'Germania 🇩🇪' },
+        regions: [
+            { name: 'Baden-Württemberg',      en: 'Baden-Württemberg',           it: 'Baden-Württemberg',                    lat: 48.6616, lon: 9.3501  },
+            { name: 'Bayern',                 en: 'Bavaria',                     it: 'Baviera',                              lat: 48.7904, lon: 11.4979 },
+            { name: 'Berlin',                 en: 'Berlin',                      it: 'Berlino',                              lat: 52.5200, lon: 13.4050 },
+            { name: 'Brandenburg',            en: 'Brandenburg',                 it: 'Brandeburgo',                          lat: 52.4125, lon: 12.5316 },
+            { name: 'Bremen',                 en: 'Bremen',                      it: 'Brema',                                lat: 53.0793, lon: 8.8017  },
+            { name: 'Hamburg',                en: 'Hamburg',                     it: 'Amburgo',                              lat: 53.5753, lon: 10.0153 },
+            { name: 'Hessen',                 en: 'Hesse',                       it: 'Assia',                                lat: 50.6523, lon: 9.1624  },
+            { name: 'Mecklenburg-Vorpommern', en: 'Mecklenburg-Vorpommern',      it: 'Meclemburgo-Pomerania Anteriore',      lat: 53.6127, lon: 12.4294 },
+            { name: 'Niedersachsen',          en: 'Lower Saxony',                it: 'Bassa Sassonia',                       lat: 52.6367, lon: 9.8451  },
+            { name: 'Nordrhein-Westfalen',    en: 'North Rhine-Westphalia',      it: 'Renania Settentrionale-Vestfalia',     lat: 51.4332, lon: 7.6616  },
+            { name: 'Rheinland-Pfalz',        en: 'Rhineland-Palatinate',        it: 'Renania-Palatinato',                   lat: 50.1189, lon: 7.3080  },
+            { name: 'Saarland',               en: 'Saarland',                    it: 'Saarland',                             lat: 49.3964, lon: 7.0228  },
+            { name: 'Sachsen',                en: 'Saxony',                      it: 'Sassonia',                             lat: 51.1045, lon: 13.2017 },
+            { name: 'Sachsen-Anhalt',         en: 'Saxony-Anhalt',               it: 'Sassonia-Anhalt',                      lat: 51.8962, lon: 11.6904 },
+            { name: 'Schleswig-Holstein',     en: 'Schleswig-Holstein',           it: 'Schleswig-Holstein',                  lat: 54.2194, lon: 9.6961  },
+            { name: 'Thüringen',              en: 'Thuringia',                   it: 'Turingia',                             lat: 50.9787, lon: 11.0297 },
+        ]
+    },
+    {
+        names: { de: 'Italien 🇮🇹', en: 'Italy 🇮🇹', it: 'Italia 🇮🇹' },
+        regions: [
+            { name: 'Agrigento',            de: 'Agrigent',         en: 'Agrigento',            lat: 37.3089, lon: 13.5765 },
+            { name: 'Alessandria',          en: 'Alessandria',      it: 'Alessandria',          lat: 44.9124, lon:  8.6151 },
+            { name: 'Ancona',               en: 'Ancona',           it: 'Ancona',               lat: 43.6158, lon: 13.5189 },
+            { name: 'Aosta',                de: 'Aosta',            en: 'Aosta',                lat: 45.7372, lon:  7.3210 },
+            { name: 'Arezzo',               en: 'Arezzo',           it: 'Arezzo',               lat: 43.4633, lon: 11.8800 },
+            { name: 'Ascoli Piceno',        en: 'Ascoli Piceno',    it: 'Ascoli Piceno',        lat: 42.8535, lon: 13.5749 },
+            { name: 'Asti',                 en: 'Asti',             it: 'Asti',                 lat: 44.9003, lon:  8.2066 },
+            { name: 'Avellino',             en: 'Avellino',         it: 'Avellino',             lat: 40.9148, lon: 14.7904 },
+            { name: 'Bari',                 en: 'Bari',             it: 'Bari',                 lat: 41.1177, lon: 16.8512 },
+            { name: 'Barletta-Andria-Trani',en: 'Barletta-Andria-Trani', it: 'Barletta-Andria-Trani', lat: 41.3148, lon: 16.2844 },
+            { name: 'Belluno',              en: 'Belluno',          it: 'Belluno',              lat: 46.1435, lon: 12.2169 },
+            { name: 'Benevento',            en: 'Benevento',        it: 'Benevento',            lat: 41.1297, lon: 14.7813 },
+            { name: 'Bergamo',              en: 'Bergamo',          it: 'Bergamo',              lat: 45.6983, lon:  9.6773 },
+            { name: 'Biella',               en: 'Biella',           it: 'Biella',               lat: 45.5628, lon:  8.0530 },
+            { name: 'Bologna',              en: 'Bologna',          it: 'Bologna',              lat: 44.4949, lon: 11.3426 },
+            { name: 'Bolzano',              de: 'Bozen',            en: 'Bolzano/Bozen',        lat: 46.4982, lon: 11.3548 },
+            { name: 'Brescia',              en: 'Brescia',          it: 'Brescia',              lat: 45.5416, lon: 10.2118 },
+            { name: 'Brindisi',             en: 'Brindisi',         it: 'Brindisi',             lat: 40.6326, lon: 17.9418 },
+            { name: 'Cagliari',             en: 'Cagliari',         it: 'Cagliari',             lat: 39.2238, lon:  9.1217 },
+            { name: 'Caltanissetta',        en: 'Caltanissetta',    it: 'Caltanissetta',        lat: 37.4861, lon: 14.0625 },
+            { name: 'Campobasso',           en: 'Campobasso',       it: 'Campobasso',           lat: 41.5603, lon: 14.6564 },
+            { name: 'Caserta',              en: 'Caserta',          it: 'Caserta',              lat: 41.0742, lon: 14.3326 },
+            { name: 'Catania',              en: 'Catania',          it: 'Catania',              lat: 37.5023, lon: 15.0873 },
+            { name: 'Catanzaro',            en: 'Catanzaro',        it: 'Catanzaro',            lat: 38.9098, lon: 16.5877 },
+            { name: 'Chieti',               en: 'Chieti',           it: 'Chieti',               lat: 42.3509, lon: 14.1676 },
+            { name: 'Como',                 en: 'Como',             it: 'Como',                 lat: 45.8080, lon:  9.0852 },
+            { name: 'Cosenza',              en: 'Cosenza',          it: 'Cosenza',              lat: 39.2984, lon: 16.2543 },
+            { name: 'Cremona',              en: 'Cremona',          it: 'Cremona',              lat: 45.1333, lon: 10.0225 },
+            { name: 'Crotone',              en: 'Crotone',          it: 'Crotone',              lat: 39.0808, lon: 17.1262 },
+            { name: 'Cuneo',                de: 'Cuneo',            en: 'Cuneo',                lat: 44.3845, lon:  7.5432 },
+            { name: 'Enna',                 en: 'Enna',             it: 'Enna',                 lat: 37.5653, lon: 14.2797 },
+            { name: 'Fermo',                en: 'Fermo',            it: 'Fermo',                lat: 43.1601, lon: 13.7185 },
+            { name: 'Ferrara',              en: 'Ferrara',          it: 'Ferrara',              lat: 44.8381, lon: 11.6198 },
+            { name: 'Firenze',              de: 'Florenz',          en: 'Florence',             lat: 43.7696, lon: 11.2558 },
+            { name: 'Foggia',               en: 'Foggia',           it: 'Foggia',               lat: 41.4621, lon: 15.5446 },
+            { name: 'Forlì-Cesena',         en: 'Forlì-Cesena',     it: 'Forlì-Cesena',         lat: 44.2226, lon: 12.0407 },
+            { name: 'Frosinone',            en: 'Frosinone',        it: 'Frosinone',            lat: 41.6397, lon: 13.3428 },
+            { name: 'Genova',               de: 'Genua',            en: 'Genoa',                lat: 44.4056, lon:  8.9463 },
+            { name: 'Gorizia',              de: 'Görz',             en: 'Gorizia',              lat: 45.9400, lon: 13.6206 },
+            { name: 'Grosseto',             en: 'Grosseto',         it: 'Grosseto',             lat: 42.7673, lon: 11.1130 },
+            { name: 'Imperia',              en: 'Imperia',          it: 'Imperia',              lat: 43.8838, lon:  8.0298 },
+            { name: 'Isernia',              en: 'Isernia',          it: 'Isernia',              lat: 41.5954, lon: 14.2341 },
+            { name: "L'Aquila",             en: "L'Aquila",         it: "L'Aquila",             lat: 42.3498, lon: 13.3995 },
+            { name: 'La Spezia',            en: 'La Spezia',        it: 'La Spezia',            lat: 44.1024, lon:  9.8240 },
+            { name: 'Latina',               en: 'Latina',           it: 'Latina',               lat: 41.4677, lon: 12.9035 },
+            { name: 'Lecce',                en: 'Lecce',            it: 'Lecce',                lat: 40.3516, lon: 18.1750 },
+            { name: 'Lecco',                en: 'Lecco',            it: 'Lecco',                lat: 45.8566, lon:  9.3953 },
+            { name: 'Livorno',              de: 'Livorno',          en: 'Livorno',              lat: 43.5485, lon: 10.3106 },
+            { name: 'Lodi',                 en: 'Lodi',             it: 'Lodi',                 lat: 45.3147, lon:  9.5036 },
+            { name: 'Lucca',                en: 'Lucca',            it: 'Lucca',                lat: 43.8430, lon: 10.5080 },
+            { name: 'Macerata',             en: 'Macerata',         it: 'Macerata',             lat: 43.2988, lon: 13.4533 },
+            { name: 'Mantova',              de: 'Mantua',           en: 'Mantua',               lat: 45.1564, lon: 10.7914 },
+            { name: 'Massa-Carrara',        en: 'Massa-Carrara',    it: 'Massa-Carrara',        lat: 44.0351, lon: 10.1394 },
+            { name: 'Matera',               en: 'Matera',           it: 'Matera',               lat: 40.6664, lon: 16.6043 },
+            { name: 'Messina',              de: 'Messina',          en: 'Messina',              lat: 38.1938, lon: 15.5540 },
+            { name: 'Milano',               de: 'Mailand',          en: 'Milan',                lat: 45.4642, lon:  9.1900 },
+            { name: 'Modena',               en: 'Modena',           it: 'Modena',               lat: 44.6471, lon: 10.9252 },
+            { name: 'Monza e Brianza',      en: 'Monza and Brianza',it: 'Monza e Brianza',      lat: 45.5845, lon:  9.2744 },
+            { name: 'Napoli',               de: 'Neapel',           en: 'Naples',               lat: 40.8518, lon: 14.2681 },
+            { name: 'Novara',               en: 'Novara',           it: 'Novara',               lat: 45.4473, lon:  8.6202 },
+            { name: 'Nuoro',                en: 'Nuoro',            it: 'Nuoro',                lat: 40.3219, lon:  9.3289 },
+            { name: 'Oristano',             en: 'Oristano',         it: 'Oristano',             lat: 39.9062, lon:  8.5898 },
+            { name: 'Padova',               de: 'Padua',            en: 'Padua',                lat: 45.4064, lon: 11.8768 },
+            { name: 'Palermo',              en: 'Palermo',          it: 'Palermo',              lat: 38.1157, lon: 13.3615 },
+            { name: 'Parma',                en: 'Parma',            it: 'Parma',                lat: 44.8015, lon: 10.3279 },
+            { name: 'Pavia',                de: 'Pavia',            en: 'Pavia',                lat: 45.1847, lon:  9.1582 },
+            { name: 'Perugia',              en: 'Perugia',          it: 'Perugia',              lat: 43.1107, lon: 12.3908 },
+            { name: 'Pesaro e Urbino',      en: 'Pesaro and Urbino',it: 'Pesaro e Urbino',      lat: 43.9098, lon: 12.9136 },
+            { name: 'Pescara',              en: 'Pescara',          it: 'Pescara',              lat: 42.4618, lon: 14.2158 },
+            { name: 'Piacenza',             de: 'Piacenza',         en: 'Piacenza',             lat: 45.0526, lon:  9.6933 },
+            { name: 'Pisa',                 en: 'Pisa',             it: 'Pisa',                 lat: 43.7228, lon: 10.4017 },
+            { name: 'Pistoia',              en: 'Pistoia',          it: 'Pistoia',              lat: 43.9332, lon: 10.9170 },
+            { name: 'Pordenone',            en: 'Pordenone',        it: 'Pordenone',            lat: 45.9564, lon: 12.6615 },
+            { name: 'Potenza',              en: 'Potenza',          it: 'Potenza',              lat: 40.6404, lon: 15.8056 },
+            { name: 'Prato',                en: 'Prato',            it: 'Prato',                lat: 43.8777, lon: 11.1023 },
+            { name: 'Ragusa',               de: 'Ragusa',           en: 'Ragusa',               lat: 36.9269, lon: 14.7319 },
+            { name: 'Ravenna',              en: 'Ravenna',          it: 'Ravenna',              lat: 44.4183, lon: 12.2035 },
+            { name: 'Reggio Calabria',      en: 'Reggio Calabria',  it: 'Reggio Calabria',      lat: 38.1106, lon: 15.6613 },
+            { name: 'Reggio Emilia',        en: 'Reggio Emilia',    it: 'Reggio Emilia',        lat: 44.6989, lon: 10.6297 },
+            { name: 'Rieti',                en: 'Rieti',            it: 'Rieti',                lat: 42.4048, lon: 12.8631 },
+            { name: 'Rimini',               en: 'Rimini',           it: 'Rimini',               lat: 44.0678, lon: 12.5695 },
+            { name: 'Roma',                 de: 'Rom',              en: 'Rome',                 lat: 41.8933, lon: 12.4828 },
+            { name: 'Rovigo',               en: 'Rovigo',           it: 'Rovigo',               lat: 45.0694, lon: 11.7900 },
+            { name: 'Salerno',              en: 'Salerno',          it: 'Salerno',              lat: 40.6824, lon: 14.7681 },
+            { name: 'Sassari',              en: 'Sassari',          it: 'Sassari',              lat: 40.7259, lon:  8.5555 },
+            { name: 'Savona',               en: 'Savona',           it: 'Savona',               lat: 44.3093, lon:  8.4810 },
+            { name: 'Siena',                de: 'Siena',            en: 'Siena',                lat: 43.3186, lon: 11.3307 },
+            { name: 'Siracusa',             de: 'Syrakus',          en: 'Syracuse',             lat: 37.0755, lon: 15.2866 },
+            { name: 'Sondrio',              en: 'Sondrio',          it: 'Sondrio',              lat: 46.1698, lon:  9.8713 },
+            { name: 'Sud Sardegna',         de: 'Südsardinien',     en: 'South Sardinia',       lat: 39.3737, lon:  9.0034 },
+            { name: 'Taranto',              en: 'Taranto',          it: 'Taranto',              lat: 40.4644, lon: 17.2470 },
+            { name: 'Teramo',               en: 'Teramo',           it: 'Teramo',               lat: 42.6614, lon: 13.7039 },
+            { name: 'Terni',                en: 'Terni',            it: 'Terni',                lat: 42.5631, lon: 12.6437 },
+            { name: 'Torino',               de: 'Turin',            en: 'Turin',                lat: 45.0703, lon:  7.6869 },
+            { name: 'Trapani',              en: 'Trapani',          it: 'Trapani',              lat: 38.0176, lon: 12.5113 },
+            { name: 'Trento',               de: 'Trient',           en: 'Trento',               lat: 46.0748, lon: 11.1217 },
+            { name: 'Treviso',              en: 'Treviso',          it: 'Treviso',              lat: 45.6669, lon: 12.2421 },
+            { name: 'Trieste',              de: 'Triest',           en: 'Trieste',              lat: 45.6495, lon: 13.7768 },
+            { name: 'Udine',                de: 'Udine',            en: 'Udine',                lat: 46.0711, lon: 13.2347 },
+            { name: 'Varese',               en: 'Varese',           it: 'Varese',               lat: 45.8206, lon:  8.8257 },
+            { name: 'Venezia',              de: 'Venedig',          en: 'Venice',               lat: 45.4408, lon: 12.3155 },
+            { name: 'Verbano-Cusio-Ossola', en: 'Verbano-Cusio-Ossola', it: 'Verbano-Cusio-Ossola', lat: 45.9225, lon:  8.5763 },
+            { name: 'Vercelli',             en: 'Vercelli',         it: 'Vercelli',             lat: 45.3222, lon:  8.4233 },
+            { name: 'Verona',               en: 'Verona',           it: 'Verona',               lat: 45.4384, lon: 10.9916 },
+            { name: 'Vibo Valentia',        en: 'Vibo Valentia',    it: 'Vibo Valentia',        lat: 38.6724, lon: 16.0966 },
+            { name: 'Vicenza',              en: 'Vicenza',          it: 'Vicenza',              lat: 45.5455, lon: 11.5354 },
+            { name: 'Viterbo',              en: 'Viterbo',          it: 'Viterbo',              lat: 42.4159, lon: 12.1041 },
+        ]
+    }
+];
+
+function rName(r) {
+    if (currentLang === 'de' && r.de) return r.de;
+    if (currentLang === 'en' && r.en) return r.en;
+    if (currentLang === 'it' && r.it) return r.it;
+    return r.name; // Italian is the base for Italy; German is the base for others
+}
+
+function buildMenuHTML(panelId) {
+    return LOCATIONS.map((c, ci) => `
+        <div class="loc-country" onclick="toggleCountry(${ci},'${panelId}')">
+            <span>${c.names[currentLang] || c.names.de}</span>
+            <span class="loc-country-arrow">&#x276F;</span>
+        </div>
+        <div class="loc-regions" id="loc-regions-${panelId}-${ci}">
+            ${c.regions.map(r => {
+                const label = rName(r);
+                return `<div class="loc-region-item" data-lat="${r.lat}" data-lon="${r.lon}" data-name="${label.replace(/"/g,'&quot;')}">${label}</div>`;
+            }).join('')}
+        </div>
+    `).join('');
+}
+
+function toggleCountry(ci, panelId) {
+    const panel = document.getElementById('loc-menu-panel-global');
+    const regions = document.getElementById(`loc-regions-${panelId}-${ci}`);
+    const header = panel.querySelectorAll('.loc-country')[ci];
+    const isOpen = regions.classList.contains('open');
+    // close all
+    panel.querySelectorAll('.loc-regions').forEach(el => el.classList.remove('open'));
+    panel.querySelectorAll('.loc-country').forEach(el => el.classList.remove('expanded'));
+    if (!isOpen) {
+        regions.classList.add('open');
+        header.classList.add('expanded');
+    }
+}
+
+/* shared floating panel — lives directly on body to escape all overflow clipping */
+let _locPanel = null;
+function getLocPanel() {
+    if (!_locPanel) {
+        _locPanel = document.createElement('div');
+        _locPanel.className = 'loc-menu-panel';
+        _locPanel.id = 'loc-menu-panel-global';
+        document.body.appendChild(_locPanel);
+    }
+    return _locPanel;
+}
+
+function openLocMenuPanel(btnEl) {
+    const panel = getLocPanel();
+    panel.innerHTML = buildMenuHTML('main');
+    const r = btnEl.getBoundingClientRect();
+    const panelW = 220;
+    let left = r.left + r.width / 2 - panelW / 2;
+    left = Math.max(4, Math.min(left, window.innerWidth - panelW - 4));
+    panel.style.top   = (r.bottom + 6) + 'px';
+    panel.style.left  = left + 'px';
+    panel.style.width = panelW + 'px';
+    panel.classList.add('open');
+    // auto-open first country
+    const firstRegions = panel.querySelector('.loc-regions');
+    const firstHeader  = panel.querySelector('.loc-country');
+    if (firstRegions) { firstRegions.classList.add('open'); firstHeader.classList.add('expanded'); }
+}
+
+function closeLocMenu() {
+    const panel = getLocPanel();
+    panel.classList.remove('open');
+}
+
+function toggleLocMenu(btnEl) {
+    const panel = getLocPanel();
+    if (panel.classList.contains('open')) { closeLocMenu(); } else { openLocMenuPanel(btnEl); }
+}
+function toggleLocMenuInit(btnEl) { toggleLocMenu(btnEl); }
+
+function pickLocation(lat, lon, name) {
+    closeLocMenu();
+    init(lat, lon, true, name);
+}
+
+// delegated clicks inside the global panel
+document.addEventListener('click', e => {
+    const item = e.target.closest('.loc-region-item');
+    if (item) {
+        pickLocation(parseFloat(item.dataset.lat), parseFloat(item.dataset.lon), item.dataset.name);
+        return;
+    }
+    // close on outside click
+    if (!e.target.closest('.loc-menu-wrap') && !e.target.closest('#loc-menu-panel-global')) {
+        closeLocMenu();
+    }
+});
 
 /* ── Geolocation ────────────────────────────────── */
 function showLocActions() {
