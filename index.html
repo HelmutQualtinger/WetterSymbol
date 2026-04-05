@@ -182,29 +182,43 @@
 
     /* ── Hero ────────────────────────────────────── */
     .hero {
-        display: flex;
-        align-items: flex-end;
-        justify-content: space-between;
-        gap: 24px;
-        margin-bottom: 14px;
+        display: grid;
+        grid-template-columns: 1fr auto auto;
+        align-items: center;
+        gap: 32px;
+        padding: 22px 28px;
+        background: var(--bg-card);
+        border: 1px solid var(--border);
+        border-radius: 18px;
+        margin-bottom: 12px;
+        position: relative;
+        overflow: hidden;
     }
 
-    .hero-left { flex: 1; }
+    .hero::before {
+        content: '';
+        position: absolute;
+        inset: 0;
+        background: radial-gradient(ellipse at -8% 60%, var(--accent-dim) 0%, transparent 52%);
+        pointer-events: none;
+    }
+
+    .hero-left { min-width: 0; }
 
     .condition-row {
         display: flex;
         align-items: center;
         gap: 10px;
-        margin-bottom: 2px;
+        margin-bottom: 6px;
     }
 
-    .condition-icon { font-size: 24px; line-height: 1; }
+    .condition-icon { font-size: 28px; line-height: 1; }
 
     .condition-text {
         font-family: 'Karla', sans-serif;
-        font-size: 11px;
+        font-size: 10px;
         font-weight: 700;
-        letter-spacing: 0.32em;
+        letter-spacing: 0.38em;
         text-transform: uppercase;
         color: var(--accent);
     }
@@ -217,7 +231,7 @@
 
     .temp-val {
         font-family: 'Bebas Neue', sans-serif;
-        font-size: clamp(64px, 10vw, 120px);
+        font-size: clamp(72px, 11vw, 130px);
         color: var(--text);
         line-height: 0.85;
         letter-spacing: -0.01em;
@@ -226,21 +240,21 @@
     .temp-suffix {
         display: flex;
         flex-direction: column;
-        margin-top: 6px;
-        margin-left: 4px;
+        margin-top: 8px;
+        margin-left: 5px;
         gap: 2px;
     }
 
     .temp-deg {
         font-family: 'Bebas Neue', sans-serif;
-        font-size: clamp(24px, 3.5vw, 44px);
+        font-size: clamp(28px, 4vw, 50px);
         color: var(--accent);
         line-height: 1;
     }
 
     .temp-unit-label {
         font-family: 'JetBrains Mono', monospace;
-        font-size: 10px;
+        font-size: 9px;
         color: var(--text-label);
         letter-spacing: 0.2em;
     }
@@ -249,10 +263,10 @@
         font-family: 'JetBrains Mono', monospace;
         font-size: 11px;
         color: var(--text-dim);
-        margin-top: 8px;
+        margin-top: 10px;
         letter-spacing: 0.04em;
         display: flex;
-        gap: 20px;
+        gap: 22px;
         flex-wrap: wrap;
     }
 
@@ -264,41 +278,40 @@
         display: flex;
         flex-direction: column;
         align-items: center;
-        gap: 6px;
-        padding: 12px 18px 12px;
+        gap: 8px;
+        padding: 14px 20px;
         background: var(--bg-card);
-        border: 1px solid var(--border);
+        border: 1px solid var(--border-lit);
         border-radius: 14px;
     }
 
     .wind-panel-label {
-        font-family: 'Karla', sans-serif;
-        font-size: 9px;
-        font-weight: 700;
-        letter-spacing: 0.35em;
+        font-family: 'JetBrains Mono', monospace;
+        font-size: 8px;
+        letter-spacing: 0.38em;
         text-transform: uppercase;
         color: var(--text-label);
     }
 
-    .compass-svg { width: 100px; height: 100px; }
+    .compass-svg { width: 110px; height: 110px; }
 
     .wind-nums {
         text-align: center;
         display: flex;
         flex-direction: column;
-        gap: 2px;
+        gap: 3px;
     }
 
     .wind-spd {
         font-family: 'JetBrains Mono', monospace;
-        font-size: 20px;
+        font-size: 24px;
         font-weight: 400;
         color: var(--text);
         line-height: 1;
     }
 
     .wind-spd .unit {
-        font-size: 12px;
+        font-size: 11px;
         color: var(--text-dim);
     }
 
@@ -311,29 +324,35 @@
 
     .wind-gust {
         font-family: 'JetBrains Mono', monospace;
-        font-size: 10px;
+        font-size: 9px;
         color: var(--text-label);
     }
 
     /* ── Section divider ─────────────────────────── */
     .rule {
         height: 1px;
-        background: linear-gradient(90deg, transparent, var(--border-lit) 30%, var(--border-lit) 70%, transparent);
+        background: linear-gradient(90deg, var(--accent) 0%, var(--border-lit) 18%, transparent 60%);
         margin-bottom: 12px;
     }
 
     .section-head {
         display: flex;
         align-items: center;
-        gap: 16px;
+        gap: 10px;
         margin-bottom: 10px;
     }
 
+    .section-dot {
+        width: 5px; height: 5px;
+        border-radius: 50%;
+        background: var(--accent);
+        flex-shrink: 0;
+    }
+
     .section-title {
-        font-family: 'Karla', sans-serif;
-        font-size: 9px;
-        font-weight: 700;
-        letter-spacing: 0.4em;
+        font-family: 'JetBrains Mono', monospace;
+        font-size: 8px;
+        letter-spacing: 0.45em;
         text-transform: uppercase;
         color: var(--text-label);
         white-space: nowrap;
@@ -342,7 +361,7 @@
     .section-line {
         flex: 1;
         height: 1px;
-        background: var(--border);
+        background: linear-gradient(90deg, var(--border-lit), transparent);
     }
 
     /* ── Metrics grid ────────────────────────────── */
@@ -353,12 +372,11 @@
     }
 
     @media (max-width: 900px) {
-        .metrics-grid { grid-template-columns: repeat(3, 1fr); }
+        .metrics-grid { grid-template-columns: repeat(4, 1fr); }
     }
-    @media (max-width: 660px) {
+    @media (max-width: 720px) {
         .metrics-grid { grid-template-columns: repeat(2, 1fr); }
-        .hero { flex-direction: column; align-items: flex-start; }
-        .wind-panel { width: 100%; flex-direction: row; flex-wrap: wrap; justify-content: center; }
+        .hero { grid-template-columns: 1fr; gap: 16px; }
     }
     @media (max-width: 400px) {
         .metrics-grid { grid-template-columns: 1fr 1fr; }
@@ -367,11 +385,20 @@
     .card {
         background: var(--bg-card);
         border: 1px solid var(--border);
-        border-radius: 10px;
-        padding: 10px 14px 10px;
+        border-radius: 12px;
+        padding: 14px 16px 12px;
         position: relative;
         overflow: hidden;
-        transition: background 0.25s, border-color 0.25s, transform 0.2s;
+        transition: background 0.2s, border-color 0.2s, transform 0.15s;
+    }
+
+    .card::before {
+        content: '';
+        position: absolute;
+        top: 0; left: 0; bottom: 0;
+        width: 2px;
+        background: var(--c-accent, transparent);
+        border-radius: 12px 0 0 12px;
     }
 
     .card:hover {
@@ -380,34 +407,29 @@
         transform: translateY(-2px);
     }
 
-    .card::after {
-        content: '';
-        position: absolute;
-        inset: 0 0 auto 0;
-        height: 1px;
-        background: linear-gradient(90deg, transparent, rgba(255,255,255,0.08), transparent);
-    }
+    .card--w2 { grid-column: span 2; }
+
+    .card--feat .card-value { font-size: 38px; }
 
     .card-label {
-        font-family: 'Karla', sans-serif;
-        font-size: 9px;
-        font-weight: 700;
-        letter-spacing: 0.35em;
+        font-family: 'JetBrains Mono', monospace;
+        font-size: 8px;
+        letter-spacing: 0.38em;
         text-transform: uppercase;
         color: var(--text-label);
-        margin-bottom: 5px;
+        margin-bottom: 8px;
     }
 
     .card-value {
         font-family: 'JetBrains Mono', monospace;
-        font-size: 22px;
+        font-size: 28px;
         font-weight: 400;
         color: var(--text);
         line-height: 1;
     }
 
     .card-value .u {
-        font-size: 11px;
+        font-size: 12px;
         color: var(--text-dim);
         margin-left: 2px;
     }
@@ -416,7 +438,7 @@
         font-family: 'JetBrains Mono', monospace;
         font-size: 10px;
         color: var(--text-label);
-        margin-top: 4px;
+        margin-top: 6px;
         line-height: 1.4;
     }
 
@@ -445,7 +467,7 @@
     .val-accent{ color: var(--accent); }
     .val-red   { color: #ff3333; }
 
-    /* ── Snowfall card special ───────────────────── */
+    /* ── Card span (kept for compat) ─────────────── */
     .card-wide {
         grid-column: span 2;
     }
