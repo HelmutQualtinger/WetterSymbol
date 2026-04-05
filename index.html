@@ -1613,11 +1613,11 @@ async function init(lat, lon, fallback) {
 }
 
 /* ── Geolocation ────────────────────────────────── */
-function showLocActions(hint) {
+function showLocActions() {
     const el = document.getElementById('loc-actions');
-    if (el) el.style.display = 'flex';
+    if (el) { el.style.display = 'flex'; }
     const lbl = document.getElementById('state-label');
-    if (lbl) lbl.textContent = hint || t('geoDefault');
+    if (lbl) lbl.textContent = t('geoDefault');
 }
 
 function requestLocation() {
@@ -1626,42 +1626,24 @@ function requestLocation() {
     const lbl = document.getElementById('state-label');
     if (lbl) lbl.textContent = t('acquiring');
 
-    if (!('geolocation' in navigator)) {
-        showLocActions('Geolocation not supported');
-        return;
-    }
-    if (location.protocol !== 'https:' && location.hostname !== 'localhost') {
-        showLocActions('⚠ HTTPS required for location');
-        return;
-    }
+    if (!('geolocation' in navigator)) { showLocActions(); return; }
 
     navigator.geolocation.getCurrentPosition(
         pos => init(pos.coords.latitude, pos.coords.longitude, false),
-        err => {
-            const msg = err.code === 1 ? '⚠ Location denied — check browser settings' : t('geoDefault');
-            showLocActions(msg);
-        },
+        ()  => showLocActions(),
         { timeout: 10000, enableHighAccuracy: false }
     );
 }
 
-// Auto-try on load
+// Auto-try on load; show buttons if no answer within 5s or on error
 (function startGeo() {
-    if (!('geolocation' in navigator)) { showLocActions('Geolocation not supported'); return; }
-    if (location.protocol !== 'https:' && location.hostname !== 'localhost') {
-        showLocActions('⚠ HTTPS required for location');
-        return;
-    }
+    if (!('geolocation' in navigator)) { showLocActions(); return; }
 
-    const showTimer = setTimeout(() => showLocActions(), 5000);
+    const showTimer = setTimeout(showLocActions, 5000);
 
     navigator.geolocation.getCurrentPosition(
         pos => { clearTimeout(showTimer); init(pos.coords.latitude, pos.coords.longitude, false); },
-        err => {
-            clearTimeout(showTimer);
-            const msg = err.code === 1 ? '⚠ Location denied — check browser settings' : t('geoDefault');
-            showLocActions(msg);
-        },
+        ()   => { clearTimeout(showTimer); showLocActions(); },
         { timeout: 10000, enableHighAccuracy: false }
     );
 })();
