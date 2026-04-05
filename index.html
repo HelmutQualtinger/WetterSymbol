@@ -1,0 +1,1576 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>METEO STATION</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=JetBrains+Mono:wght@300;400;500&family=Karla:wght@300;400;500;700&display=swap" rel="stylesheet">
+
+    <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+        --bg: #0b0d12;
+        --bg-card: rgba(255,255,255,0.06);
+        --bg-card-hover: rgba(255,255,255,0.1);
+        --border: rgba(255,255,255,0.14);
+        --border-lit: rgba(255,255,255,0.26);
+        --accent: #ff6535;
+        --accent-dim: rgba(255, 101, 53, 0.18);
+        --gold: #ffc45e;
+        --blue: #5b8cff;
+        --green: #4ade80;
+        --text: #f0ece4;
+        --text-dim: #b0ada8;
+        --text-label: #888480;
+    }
+
+    html, body { min-height: 100vh; }
+
+    body {
+        background: var(--bg);
+        color: var(--text);
+        font-family: 'Karla', sans-serif;
+        overflow-x: hidden;
+    }
+
+    /* ── Background ─────────────────────────────── */
+    .bg-layer {
+        position: fixed; inset: 0;
+        pointer-events: none; z-index: 0;
+        overflow: hidden;
+    }
+
+    .orb {
+        position: absolute;
+        border-radius: 50%;
+        filter: blur(130px);
+        animation: drift linear infinite alternate;
+    }
+    .orb-1 {
+        width: 700px; height: 700px;
+        background: #ff4422;
+        top: -250px; left: -180px;
+        opacity: 0.09;
+        animation-duration: 28s;
+    }
+    .orb-2 {
+        width: 600px; height: 600px;
+        background: #2244bb;
+        bottom: -200px; right: -150px;
+        opacity: 0.1;
+        animation-duration: 34s;
+        animation-delay: -14s;
+    }
+    .orb-3 {
+        width: 350px; height: 350px;
+        background: #ffaa33;
+        top: 40%; left: 55%;
+        opacity: 0.055;
+        animation-duration: 22s;
+        animation-delay: -7s;
+    }
+
+    @keyframes drift {
+        from { transform: translate(0,0) scale(1); }
+        to   { transform: translate(70px, 45px) scale(1.12); }
+    }
+
+    /* Scanlines */
+    body::after {
+        content: '';
+        position: fixed; inset: 0;
+        background: repeating-linear-gradient(
+            to bottom,
+            transparent 0px,
+            transparent 3px,
+            rgba(0,0,0,0.04) 3px,
+            rgba(0,0,0,0.04) 4px
+        );
+        pointer-events: none;
+        z-index: 9998;
+    }
+
+    /* ── Layout ──────────────────────────────────── */
+    .page {
+        position: relative; z-index: 1;
+        max-width: 1120px;
+        margin: 0 auto;
+        padding: 14px 24px 14px;
+        min-height: 100vh;
+        display: flex;
+        flex-direction: column;
+        gap: 0;
+    }
+
+    /* ── Header ──────────────────────────────────── */
+    .header {
+        display: grid;
+        grid-template-columns: 1fr auto 1fr;
+        align-items: center;
+        margin-bottom: 24px;
+        padding-bottom: 12px;
+        border-bottom: 1px solid var(--border);
+    }
+
+    .header-clock {
+        font-family: 'Bebas Neue', sans-serif;
+        font-size: 32px;
+        letter-spacing: 0.1em;
+        color: var(--text);
+        text-align: center;
+    }
+
+    .header-right {
+        display: flex;
+        align-items: center;
+        justify-content: flex-end;
+        gap: 16px;
+    }
+
+    .brand {
+        display: flex;
+        flex-direction: column;
+        gap: 2px;
+    }
+
+    .brand-name {
+        font-family: 'Bebas Neue', sans-serif;
+        font-size: 13px;
+        letter-spacing: 0.5em;
+        color: var(--accent);
+        text-transform: uppercase;
+    }
+
+    .brand-sub {
+        font-family: 'JetBrains Mono', monospace;
+        font-size: 9px;
+        letter-spacing: 0.3em;
+        color: var(--text-label);
+        text-transform: uppercase;
+    }
+
+    .header-meta {
+        text-align: right;
+        display: flex;
+        flex-direction: column;
+        gap: 3px;
+    }
+
+    .meta-location {
+        font-family: 'JetBrains Mono', monospace;
+        font-size: 12px;
+        color: var(--text);
+        letter-spacing: 0.06em;
+    }
+
+    .meta-coords {
+        font-family: 'JetBrains Mono', monospace;
+        font-size: 10px;
+        color: var(--text-dim);
+        letter-spacing: 0.05em;
+    }
+
+    .meta-time {
+        font-family: 'JetBrains Mono', monospace;
+        font-size: 10px;
+        color: var(--text-label);
+        letter-spacing: 0.05em;
+    }
+
+    /* ── Hero ────────────────────────────────────── */
+    .hero {
+        display: flex;
+        align-items: flex-end;
+        justify-content: space-between;
+        gap: 24px;
+        margin-bottom: 14px;
+    }
+
+    .hero-left { flex: 1; }
+
+    .condition-row {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        margin-bottom: 2px;
+    }
+
+    .condition-icon { font-size: 24px; line-height: 1; }
+
+    .condition-text {
+        font-family: 'Karla', sans-serif;
+        font-size: 11px;
+        font-weight: 700;
+        letter-spacing: 0.32em;
+        text-transform: uppercase;
+        color: var(--accent);
+    }
+
+    .temp-row {
+        display: flex;
+        align-items: flex-start;
+        line-height: 1;
+    }
+
+    .temp-val {
+        font-family: 'Bebas Neue', sans-serif;
+        font-size: clamp(64px, 10vw, 120px);
+        color: var(--text);
+        line-height: 0.85;
+        letter-spacing: -0.01em;
+    }
+
+    .temp-suffix {
+        display: flex;
+        flex-direction: column;
+        margin-top: 6px;
+        margin-left: 4px;
+        gap: 2px;
+    }
+
+    .temp-deg {
+        font-family: 'Bebas Neue', sans-serif;
+        font-size: clamp(24px, 3.5vw, 44px);
+        color: var(--accent);
+        line-height: 1;
+    }
+
+    .temp-unit-label {
+        font-family: 'JetBrains Mono', monospace;
+        font-size: 10px;
+        color: var(--text-label);
+        letter-spacing: 0.2em;
+    }
+
+    .sub-temps {
+        font-family: 'JetBrains Mono', monospace;
+        font-size: 11px;
+        color: var(--text-dim);
+        margin-top: 8px;
+        letter-spacing: 0.04em;
+        display: flex;
+        gap: 20px;
+        flex-wrap: wrap;
+    }
+
+    .sub-temps span { color: var(--text); }
+
+    /* ── Wind Compass ────────────────────────────── */
+    .wind-panel {
+        flex-shrink: 0;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 6px;
+        padding: 12px 18px 12px;
+        background: var(--bg-card);
+        border: 1px solid var(--border);
+        border-radius: 14px;
+    }
+
+    .wind-panel-label {
+        font-family: 'Karla', sans-serif;
+        font-size: 9px;
+        font-weight: 700;
+        letter-spacing: 0.35em;
+        text-transform: uppercase;
+        color: var(--text-label);
+    }
+
+    .compass-svg { width: 100px; height: 100px; }
+
+    .wind-nums {
+        text-align: center;
+        display: flex;
+        flex-direction: column;
+        gap: 2px;
+    }
+
+    .wind-spd {
+        font-family: 'JetBrains Mono', monospace;
+        font-size: 20px;
+        font-weight: 400;
+        color: var(--text);
+        line-height: 1;
+    }
+
+    .wind-spd .unit {
+        font-size: 12px;
+        color: var(--text-dim);
+    }
+
+    .wind-dir-label {
+        font-family: 'JetBrains Mono', monospace;
+        font-size: 12px;
+        color: var(--accent);
+        letter-spacing: 0.05em;
+    }
+
+    .wind-gust {
+        font-family: 'JetBrains Mono', monospace;
+        font-size: 10px;
+        color: var(--text-label);
+    }
+
+    /* ── Section divider ─────────────────────────── */
+    .rule {
+        height: 1px;
+        background: linear-gradient(90deg, transparent, var(--border-lit) 30%, var(--border-lit) 70%, transparent);
+        margin-bottom: 12px;
+    }
+
+    .section-head {
+        display: flex;
+        align-items: center;
+        gap: 16px;
+        margin-bottom: 10px;
+    }
+
+    .section-title {
+        font-family: 'Karla', sans-serif;
+        font-size: 9px;
+        font-weight: 700;
+        letter-spacing: 0.4em;
+        text-transform: uppercase;
+        color: var(--text-label);
+        white-space: nowrap;
+    }
+
+    .section-line {
+        flex: 1;
+        height: 1px;
+        background: var(--border);
+    }
+
+    /* ── Metrics grid ────────────────────────────── */
+    .metrics-grid {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 8px;
+    }
+
+    @media (max-width: 900px) {
+        .metrics-grid { grid-template-columns: repeat(3, 1fr); }
+    }
+    @media (max-width: 660px) {
+        .metrics-grid { grid-template-columns: repeat(2, 1fr); }
+        .hero { flex-direction: column; align-items: flex-start; }
+        .wind-panel { width: 100%; flex-direction: row; flex-wrap: wrap; justify-content: center; }
+    }
+    @media (max-width: 400px) {
+        .metrics-grid { grid-template-columns: 1fr 1fr; }
+    }
+
+    .card {
+        background: var(--bg-card);
+        border: 1px solid var(--border);
+        border-radius: 10px;
+        padding: 10px 14px 10px;
+        position: relative;
+        overflow: hidden;
+        transition: background 0.25s, border-color 0.25s, transform 0.2s;
+    }
+
+    .card:hover {
+        background: var(--bg-card-hover);
+        border-color: var(--border-lit);
+        transform: translateY(-2px);
+    }
+
+    .card::after {
+        content: '';
+        position: absolute;
+        inset: 0 0 auto 0;
+        height: 1px;
+        background: linear-gradient(90deg, transparent, rgba(255,255,255,0.08), transparent);
+    }
+
+    .card-label {
+        font-family: 'Karla', sans-serif;
+        font-size: 9px;
+        font-weight: 700;
+        letter-spacing: 0.35em;
+        text-transform: uppercase;
+        color: var(--text-label);
+        margin-bottom: 5px;
+    }
+
+    .card-value {
+        font-family: 'JetBrains Mono', monospace;
+        font-size: 22px;
+        font-weight: 400;
+        color: var(--text);
+        line-height: 1;
+    }
+
+    .card-value .u {
+        font-size: 11px;
+        color: var(--text-dim);
+        margin-left: 2px;
+    }
+
+    .card-sub {
+        font-family: 'JetBrains Mono', monospace;
+        font-size: 10px;
+        color: var(--text-label);
+        margin-top: 4px;
+        line-height: 1.4;
+    }
+
+    /* Bar gauge */
+    .bar {
+        height: 2px;
+        background: rgba(255,255,255,0.07);
+        border-radius: 1px;
+        margin-top: 10px;
+        overflow: hidden;
+    }
+    .bar-inner {
+        height: 100%;
+        border-radius: 1px;
+        transition: width 1.2s cubic-bezier(0.4, 0, 0.2, 1);
+        width: 0;
+    }
+    .bar-accent  { background: var(--accent); }
+    .bar-green   { background: var(--green); }
+    .bar-gold    { background: var(--gold); }
+    .bar-blue    { background: var(--blue); }
+
+    /* Color overrides */
+    .val-green { color: var(--green); }
+    .val-gold  { color: var(--gold); }
+    .val-accent{ color: var(--accent); }
+    .val-red   { color: #ff3333; }
+
+    /* ── Snowfall card special ───────────────────── */
+    .card-wide {
+        grid-column: span 2;
+    }
+
+    /* ── 7-segment clock ────────────────────────── */
+    .seg7-wrap {
+        flex-shrink: 0;
+        align-self: flex-start;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        padding-top: 4px;
+    }
+
+    @media (max-width: 660px) {
+        .seg7-wrap { order: -1; align-self: center; }
+    }
+
+    /* ── Charts ─────────────────────────────────── */
+    .charts-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 8px;
+        margin-top: 8px;
+    }
+
+    @media (max-width: 660px) {
+        .charts-grid { grid-template-columns: 1fr; }
+    }
+
+    .chart-card {
+        background: var(--bg-card);
+        border: 1px solid var(--border);
+        border-radius: 10px;
+        padding: 10px 14px 8px;
+        position: relative;
+        overflow: hidden;
+    }
+
+    .chart-card::after {
+        content: '';
+        position: absolute;
+        inset: 0 0 auto 0;
+        height: 1px;
+        background: linear-gradient(90deg, transparent, rgba(255,255,255,0.08), transparent);
+    }
+
+    .chart-head {
+        display: flex;
+        justify-content: space-between;
+        align-items: baseline;
+        margin-bottom: 8px;
+    }
+
+    .chart-title {
+        font-family: 'Karla', sans-serif;
+        font-size: 9px;
+        font-weight: 700;
+        letter-spacing: 0.35em;
+        text-transform: uppercase;
+        color: var(--text-label);
+    }
+
+    .chart-range {
+        font-family: 'JetBrains Mono', monospace;
+        font-size: 9px;
+        color: var(--text-dim);
+    }
+
+    /* ── Footer ──────────────────────────────────── */
+    .footer {
+        margin-top: 10px;
+        display: flex;
+        justify-content: flex-end;
+        align-items: center;
+        gap: 24px;
+    }
+
+    .footer-text {
+        font-family: 'JetBrains Mono', monospace;
+        font-size: 9px;
+        color: var(--text-label);
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+    }
+
+    .status-dot {
+        width: 5px; height: 5px;
+        border-radius: 50%;
+        background: var(--green);
+        box-shadow: 0 0 6px var(--green);
+        animation: pulse 2.5s ease-in-out infinite;
+        display: inline-block;
+        margin-right: 7px;
+        vertical-align: middle;
+    }
+
+    @keyframes pulse {
+        0%, 100% { opacity: 1; }
+        50% { opacity: 0.35; }
+    }
+
+    /* ── Loading & Error ─────────────────────────── */
+    .state-view {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 20px;
+        padding: 80px 0;
+    }
+
+    .dots {
+        display: flex;
+        gap: 9px;
+    }
+
+    .dot {
+        width: 7px; height: 7px;
+        border-radius: 50%;
+        background: var(--accent);
+        animation: dotblink 1.3s ease-in-out infinite;
+    }
+    .dot:nth-child(2) { animation-delay: 0.18s; }
+    .dot:nth-child(3) { animation-delay: 0.36s; }
+
+    @keyframes dotblink {
+        0%, 100% { opacity: 0.15; transform: scale(0.75); }
+        50%       { opacity: 1;    transform: scale(1); }
+    }
+
+    .state-label {
+        font-family: 'JetBrains Mono', monospace;
+        font-size: 12px;
+        color: var(--text-dim);
+        letter-spacing: 0.25em;
+        text-transform: uppercase;
+    }
+
+    .error-label {
+        font-family: 'JetBrains Mono', monospace;
+        font-size: 14px;
+        color: var(--accent);
+        text-align: center;
+        line-height: 1.7;
+    }
+
+    /* ── Fade-in animations ──────────────────────── */
+    .fi {
+        opacity: 0;
+        transform: translateY(12px);
+        animation: fi 0.55s ease forwards;
+    }
+    @keyframes fi { to { opacity: 1; transform: none; } }
+
+    /* ── Theme toggle button ─────────────────────── */
+    .theme-btn {
+        background: var(--bg-card);
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        padding: 5px 9px;
+        cursor: pointer;
+        color: var(--text-dim);
+        font-size: 15px;
+        line-height: 1;
+        transition: background 0.2s, border-color 0.2s, color 0.2s;
+        flex-shrink: 0;
+        align-self: center;
+    }
+    .theme-btn:hover {
+        background: var(--bg-card-hover);
+        border-color: var(--border-lit);
+        color: var(--text);
+    }
+
+    /* ── Light theme ─────────────────────────────── */
+    [data-theme="light"] {
+        --bg: #f0ede6;
+        --bg-card: rgba(255,255,255,0.60);
+        --bg-card-hover: rgba(255,255,255,0.90);
+        --border: rgba(0,0,0,0.10);
+        --border-lit: rgba(0,0,0,0.22);
+        --text: #1c1a17;
+        --text-dim: #5c5956;
+        --text-label: #8c8a86;
+    }
+
+    [data-theme="light"] body {
+        background: var(--bg);
+    }
+
+    [data-theme="light"] body::after {
+        background: repeating-linear-gradient(
+            to bottom,
+            transparent 0px,
+            transparent 3px,
+            rgba(0,0,0,0.012) 3px,
+            rgba(0,0,0,0.012) 4px
+        );
+    }
+
+    [data-theme="light"] .orb-1 { background: #ff7755; opacity: 0.10; }
+    [data-theme="light"] .orb-2 { background: #4477cc; opacity: 0.09; }
+    [data-theme="light"] .orb-3 { background: #ffbb44; opacity: 0.07; }
+
+    [data-theme="light"] .card::after,
+    [data-theme="light"] .chart-card::after {
+        background: linear-gradient(90deg, transparent, rgba(255,255,255,0.6), transparent);
+    }
+    </style>
+</head>
+
+<body>
+<div class="bg-layer">
+    <div class="orb orb-1"></div>
+    <div class="orb orb-2"></div>
+    <div class="orb orb-3"></div>
+</div>
+
+<div class="page">
+    <header class="header">
+        <div class="brand">
+            <div class="brand-name">Meteo Station</div>
+            <div class="brand-sub">Open-Meteo Live Feed</div>
+        </div>
+        
+        <div class="header-clock" id="live-clock-large" style="padding-top: 4px;">--:--:--</div>
+        
+        <div class="header-right">
+            <button class="theme-btn" id="theme-btn" title="Toggle light/dark theme">☀</button>
+            <div class="header-meta">
+                <div class="meta-location" id="loc-name">LOCATING…</div>
+                <div class="meta-coords" id="loc-coords">—</div>
+            </div>
+        </div>
+    </header>
+
+    <div id="root">
+        <div class="state-view">
+            <div class="dots">
+                <div class="dot"></div>
+                <div class="dot"></div>
+                <div class="dot"></div>
+            </div>
+            <div class="state-label">Acquiring Signal</div>
+        </div>
+    </div>
+</div>
+
+<script>
+/* ── Theme ──────────────────────────────────────── */
+let lastRenderArgs = null;
+
+(function initTheme() {
+    const saved = localStorage.getItem('meteo-theme') || 'dark';
+    document.documentElement.dataset.theme = saved;
+    const btn = document.getElementById('theme-btn');
+    btn.textContent = saved === 'light' ? '☽' : '☀';
+})();
+
+document.getElementById('theme-btn').addEventListener('click', () => {
+    const html = document.documentElement;
+    const next = html.dataset.theme === 'light' ? 'dark' : 'light';
+    html.dataset.theme = next;
+    localStorage.setItem('meteo-theme', next);
+    document.getElementById('theme-btn').textContent = next === 'light' ? '☽' : '☀';
+    if (lastRenderArgs) render(...lastRenderArgs);
+});
+
+/* ── i18n ───────────────────────────────────────── */
+const LANGS = {
+  en: {
+    brandSub:'Open-Meteo Live Feed', locating:'LOCATING\u2026', acquiring:'Acquiring Signal',
+    signalLost:'SIGNAL LOST', windDir:'Wind Direction', gustsUp:'Gusts up to',
+    feelsLike:'Feels like', dewPtShort:'Dew point', daytime:'Daytime', nighttime:'Nighttime',
+    currentCond:'Current Conditions', humidity:'Humidity', relHumidity:'Relative humidity',
+    pressureMSL:'Pressure (MSL)', surface:'Surface', cloudCover:'Cloud Cover',
+    mostlyClear:'Mostly clear', partlyCloudy:'Partly cloudy', overcast:'Overcast',
+    visibility:'Visibility', excellent:'Excellent', good:'Good', moderate:'Moderate', poor:'Poor',
+    precip:'Precipitation', rain:'Rain', snow:'Snow', showers:'Showers',
+    precipProb:'Precip. probability', convShowers:'Convective showers', uvIndex:'UV Index',
+    low:'Low', high:'High', veryHigh:'Very High', extreme:'Extreme',
+    dewPoint:'Dew Point', uncomfortable:'Uncomfortable', humid:'Humid', comfortable:'Comfortable', dry:'Dry',
+    apparentTemp:'Apparent Temp', perceivedTemp:'Perceived temperature',
+    swRad:'Shortwave Radiation', intense:'Intense', minimal:'Minimal',
+    snowfall:'Snowfall', snowDepth:'Snow depth equivalent', wmoCode:'WMO Code',
+    history24h:'24-Hour History', temperature:'Temperature', updated:'Updated',
+    geoDefault:'Geolocation denied \u2014 using default',
+    wmo:{0:'Clear Sky',1:'Mainly Clear',2:'Partly Cloudy',3:'Overcast',45:'Fog',48:'Rime Fog',
+      51:'Light Drizzle',53:'Drizzle',55:'Dense Drizzle',56:'Light Freezing Drizzle',57:'Freezing Drizzle',
+      61:'Slight Rain',63:'Rain',65:'Heavy Rain',66:'Light Freezing Rain',67:'Freezing Rain',
+      71:'Slight Snow',73:'Snow',75:'Heavy Snow',77:'Snow Grains',
+      80:'Slight Showers',81:'Showers',82:'Violent Showers',85:'Snow Showers',86:'Heavy Snow Showers',
+      95:'Thunderstorm',96:'Thunderstorm + Hail',99:'Thunderstorm + Hail'}
+  },
+  de: {
+    brandSub:'Open-Meteo Echtzeit', locating:'WIRD ERMITTELT\u2026', acquiring:'Signal wird erfasst',
+    signalLost:'SIGNAL VERLOREN', windDir:'Windrichtung', gustsUp:'B\xf6en bis',
+    feelsLike:'Gef\xfchlt', dewPtShort:'Taupunkt', daytime:'Tags\xfcber', nighttime:'Nachts',
+    currentCond:'Aktuelle Wetterlage', humidity:'Luftfeuchte', relHumidity:'Relative Luftfeuchte',
+    pressureMSL:'Luftdruck (MSL)', surface:'Bodendruck', cloudCover:'Bew\xf6lkung',
+    mostlyClear:'\xdcberwiegend klar', partlyCloudy:'Teils bew\xf6lkt', overcast:'Bedeckt',
+    visibility:'Sichtweite', excellent:'Sehr gut', good:'Gut', moderate:'M\xe4\xdfig', poor:'Schlecht',
+    precip:'Niederschlag', rain:'Regen', snow:'Schnee', showers:'Schauer',
+    precipProb:'Niederschlagswahrsch.', convShowers:'Konvektive Schauer', uvIndex:'UV-Index',
+    low:'Niedrig', high:'Hoch', veryHigh:'Sehr hoch', extreme:'Extrem',
+    dewPoint:'Taupunkt', uncomfortable:'Unangenehm', humid:'Feucht', comfortable:'Angenehm', dry:'Trocken',
+    apparentTemp:'Gef\xfchlte Temp.', perceivedTemp:'Gef\xfchlte Temperatur',
+    swRad:'Kurzwellenstrahlung', intense:'Intensiv', minimal:'Minimal',
+    snowfall:'Schneefall', snowDepth:'\xc4quiv. Schneeh\xf6he', wmoCode:'WMO-Code',
+    history24h:'24-Stunden-Verlauf', temperature:'Temperatur', updated:'Aktualisiert',
+    geoDefault:'Standort nicht verf\xfcgbar \u2014 Standard',
+    wmo:{0:'Klarer Himmel',1:'\xdcberwiegend klar',2:'Teils bew\xf6lkt',3:'Bedeckt',
+      45:'Nebel',48:'Reifnebel',51:'Leichter Nieselregen',53:'Nieselregen',55:'Starker Nieselregen',
+      56:'Leichter Gefriernieseln',57:'Gefriernieseln',61:'Leichter Regen',63:'Regen',65:'Starker Regen',
+      66:'Leichter Gefrierregen',67:'Gefrierregen',71:'Leichter Schneefall',73:'Schneefall',
+      75:'Starker Schneefall',77:'Schneek\xf6rner',80:'Leichte Schauer',81:'Schauer',82:'Starke Schauer',
+      85:'Schneeschauer',86:'Starke Schneeschauer',95:'Gewitter',96:'Gewitter mit Hagel',99:'Gewitter mit Hagel'}
+  },
+  fr: {
+    brandSub:'Open-Meteo en direct', locating:'LOCALISATION\u2026', acquiring:'Acquisition du signal',
+    signalLost:'SIGNAL PERDU', windDir:'Direction du vent', gustsUp:'Rafales jusqu\u2019\xe0',
+    feelsLike:'Ressenti', dewPtShort:'Point de ros\xe9e', daytime:'Jour', nighttime:'Nuit',
+    currentCond:'Conditions actuelles', humidity:'Humidit\xe9', relHumidity:'Humidit\xe9 relative',
+    pressureMSL:'Pression (MSL)', surface:'Pression au sol', cloudCover:'N\xe9bulosit\xe9',
+    mostlyClear:'Principalement d\xe9gag\xe9', partlyCloudy:'Partiellement nuageux', overcast:'Couvert',
+    visibility:'Visibilit\xe9', excellent:'Excellente', good:'Bonne', moderate:'Mod\xe9r\xe9e', poor:'Mauvaise',
+    precip:'Pr\xe9cipitations', rain:'Pluie', snow:'Neige', showers:'Averses',
+    precipProb:'Prob. pr\xe9cip.', convShowers:'Averses convectives', uvIndex:'Indice UV',
+    low:'Faible', high:'\xc9lev\xe9', veryHigh:'Tr\xe8s \xe9lev\xe9', extreme:'Extr\xeame',
+    dewPoint:'Point de ros\xe9e', uncomfortable:'Inconfortable', humid:'Humide', comfortable:'Confortable', dry:'Sec',
+    apparentTemp:'Temp. ressentie', perceivedTemp:'Temp\xe9rature ressentie',
+    swRad:'Rayonnement solaire', intense:'Intense', minimal:'Minimal',
+    snowfall:'Chute de neige', snowDepth:'\xc9quivalent neige', wmoCode:'Code OMM',
+    history24h:'Historique 24h', temperature:'Temp\xe9rature', updated:'Mis \xe0 jour',
+    geoDefault:'G\xe9olocalisation refus\xe9e \u2014 d\xe9faut',
+    wmo:{0:'Ciel clair',1:'Principalement d\xe9gag\xe9',2:'Partiellement nuageux',3:'Couvert',
+      45:'Brouillard',48:'Brouillard givrant',51:'Bruine l\xe9g\xe8re',53:'Bruine',55:'Bruine dense',
+      56:'Bruine vergla\xe7ante l\xe9g\xe8re',57:'Bruine vergla\xe7ante',61:'Pluie faible',63:'Pluie',65:'Pluie forte',
+      66:'Pluie vergla\xe7ante faible',67:'Pluie vergla\xe7ante',71:'Neige faible',73:'Neige',75:'Neige forte',
+      77:'Granules de neige',80:'Averses faibles',81:'Averses',82:'Averses violentes',
+      85:'Averses de neige',86:'Averses de neige fortes',95:'Orage',96:'Orage avec gr\xeale',99:'Orage avec gr\xeale'}
+  },
+  es: {
+    brandSub:'Open-Meteo en directo', locating:'LOCALIZANDO\u2026', acquiring:'Adquiriendo se\xf1al',
+    signalLost:'SE\xd1AL PERDIDA', windDir:'Direcci\xf3n del viento', gustsUp:'R\xe1fagas hasta',
+    feelsLike:'Sensaci\xf3n', dewPtShort:'Punto de roc\xedo', daytime:'D\xeda', nighttime:'Noche',
+    currentCond:'Condiciones actuales', humidity:'Humedad', relHumidity:'Humedad relativa',
+    pressureMSL:'Presi\xf3n (MSL)', surface:'Presi\xf3n superficial', cloudCover:'Nubosidad',
+    mostlyClear:'Mayormente despejado', partlyCloudy:'Parcialmente nublado', overcast:'Cubierto',
+    visibility:'Visibilidad', excellent:'Excelente', good:'Buena', moderate:'Moderada', poor:'Mala',
+    precip:'Precipitaci\xf3n', rain:'Lluvia', snow:'Nieve', showers:'Chubascos',
+    precipProb:'Prob. precipitaci\xf3n', convShowers:'Chubascos convectivos', uvIndex:'\xcdndice UV',
+    low:'Bajo', high:'Alto', veryHigh:'Muy alto', extreme:'Extremo',
+    dewPoint:'Punto de roc\xedo', uncomfortable:'Inc\xf3modo', humid:'H\xfamedo', comfortable:'C\xf3modo', dry:'Seco',
+    apparentTemp:'Temp. aparente', perceivedTemp:'Temperatura percibida',
+    swRad:'Radiaci\xf3n solar', intense:'Intensa', minimal:'M\xednima',
+    snowfall:'Nevada', snowDepth:'Equivalente de nieve', wmoCode:'C\xf3digo OMM',
+    history24h:'Historial 24 horas', temperature:'Temperatura', updated:'Actualizado',
+    geoDefault:'Geolocalizaci\xf3n denegada \u2014 predeterminado',
+    wmo:{0:'Cielo despejado',1:'Principalmente despejado',2:'Parcialmente nublado',3:'Cubierto',
+      45:'Niebla',48:'Niebla con escarcha',51:'Llovizna ligera',53:'Llovizna',55:'Llovizna densa',
+      56:'Llovizna engelante ligera',57:'Llovizna engelante',61:'Lluvia d\xe9bil',63:'Lluvia',65:'Lluvia intensa',
+      66:'Lluvia engelante d\xe9bil',67:'Lluvia engelante',71:'Nieve d\xe9bil',73:'Nieve',75:'Nieve intensa',
+      77:'Gr\xe1nulos de nieve',80:'Chubascos d\xe9biles',81:'Chubascos',82:'Chubascos violentos',
+      85:'Chubascos de nieve',86:'Chubascos de nieve intensos',95:'Tormenta',96:'Tormenta con granizo',99:'Tormenta con granizo'}
+  },
+  it: {
+    brandSub:'Open-Meteo in tempo reale', locating:'LOCALIZZAZIONE\u2026', acquiring:'Acquisizione segnale',
+    signalLost:'SEGNALE PERSO', windDir:'Direzione del vento', gustsUp:'Raffiche fino a',
+    feelsLike:'Percepita', dewPtShort:'Punto di rugiada', daytime:'Giorno', nighttime:'Notte',
+    currentCond:'Condizioni attuali', humidity:'Umidit\xe0', relHumidity:'Umidit\xe0 relativa',
+    pressureMSL:'Pressione (MSL)', surface:'Pressione al suolo', cloudCover:'Nuvolosit\xe0',
+    mostlyClear:'Prevalentemente sereno', partlyCloudy:'Parzialmente nuvoloso', overcast:'Coperto',
+    visibility:'Visibilit\xe0', excellent:'Eccellente', good:'Buona', moderate:'Moderata', poor:'Scarsa',
+    precip:'Precipitazioni', rain:'Pioggia', snow:'Neve', showers:'Rovesci',
+    precipProb:'Prob. precipit.', convShowers:'Rovesci convettivi', uvIndex:'Indice UV',
+    low:'Basso', high:'Alto', veryHigh:'Molto alto', extreme:'Estremo',
+    dewPoint:'Punto di rugiada', uncomfortable:'Scomodo', humid:'Umido', comfortable:'Confortevole', dry:'Secco',
+    apparentTemp:'Temp. percepita', perceivedTemp:'Temperatura percepita',
+    swRad:'Radiazione solare', intense:'Intensa', minimal:'Minima',
+    snowfall:'Nevicata', snowDepth:'Equivalente neve', wmoCode:'Codice OMM',
+    history24h:'Storico 24 ore', temperature:'Temperatura', updated:'Aggiornato',
+    geoDefault:'Geolocalizzazione negata \u2014 predefinito',
+    wmo:{0:'Cielo sereno',1:'Prevalentemente sereno',2:'Parzialmente nuvoloso',3:'Coperto',
+      45:'Nebbia',48:'Nebbia gelata',51:'Pioggerella leggera',53:'Pioggerella',55:'Pioggerella intensa',
+      56:'Pioggerella gelante lieve',57:'Pioggerella gelante',61:'Pioggia debole',63:'Pioggia',65:'Pioggia intensa',
+      66:'Pioggia gelante debole',67:'Pioggia gelante',71:'Neve debole',73:'Neve',75:'Neve intensa',
+      77:'Granuli di neve',80:'Rovesci deboli',81:'Rovesci',82:'Rovesci violenti',
+      85:'Rovesci di neve',86:'Rovesci di neve intensi',95:'Temporale',96:'Temporale con grandine',99:'Temporale con grandine'}
+  },
+  pt: {
+    brandSub:'Open-Meteo ao vivo', locating:'LOCALIZANDO\u2026', acquiring:'Adquirindo sinal',
+    signalLost:'SINAL PERDIDO', windDir:'Dire\xe7\xe3o do vento', gustsUp:'Rajadas at\xe9',
+    feelsLike:'Sensa\xe7\xe3o', dewPtShort:'Ponto de orvalho', daytime:'Diurno', nighttime:'Noturno',
+    currentCond:'Condi\xe7\xf5es atuais', humidity:'Umidade', relHumidity:'Umidade relativa',
+    pressureMSL:'Press\xe3o (MSL)', surface:'Press\xe3o superficial', cloudCover:'Nebulosidade',
+    mostlyClear:'Principalmente limpo', partlyCloudy:'Parcialmente nublado', overcast:'Encoberto',
+    visibility:'Visibilidade', excellent:'Excelente', good:'Boa', moderate:'Moderada', poor:'Ruim',
+    precip:'Precipita\xe7\xe3o', rain:'Chuva', snow:'Neve', showers:'Pancadas',
+    precipProb:'Prob. precipita\xe7\xe3o', convShowers:'Pancadas convectivas', uvIndex:'\xcdndice UV',
+    low:'Baixo', high:'Alto', veryHigh:'Muito alto', extreme:'Extremo',
+    dewPoint:'Ponto de orvalho', uncomfortable:'Desconfort\xe1vel', humid:'\xdamido', comfortable:'Confort\xe1vel', dry:'Seco',
+    apparentTemp:'Temp. aparente', perceivedTemp:'Temperatura percebida',
+    swRad:'Radia\xe7\xe3o solar', intense:'Intensa', minimal:'M\xednima',
+    snowfall:'Queda de neve', snowDepth:'Equivalente de neve', wmoCode:'C\xf3digo OMM',
+    history24h:'Hist\xf3rico 24 horas', temperature:'Temperatura', updated:'Atualizado',
+    geoDefault:'Geolocaliza\xe7\xe3o negada \u2014 padr\xe3o',
+    wmo:{0:'C\xe9u limpo',1:'Principalmente limpo',2:'Parcialmente nublado',3:'Encoberto',
+      45:'Nevoeiro',48:'Nevoeiro com gelo',51:'Chuvisco leve',53:'Chuvisco',55:'Chuvisco denso',
+      56:'Chuvisco engelante leve',57:'Chuvisco engelante',61:'Chuva fraca',63:'Chuva',65:'Chuva forte',
+      66:'Chuva engelante fraca',67:'Chuva engelante',71:'Neve fraca',73:'Neve',75:'Neve intensa',
+      77:'Gr\xe3nulos de neve',80:'Pancadas fracas',81:'Pancadas',82:'Pancadas violentas',
+      85:'Pancadas de neve',86:'Pancadas de neve intensas',95:'Trovoada',96:'Trovoada com granizo',99:'Trovoada com granizo'}
+  },
+  nl: {
+    brandSub:'Open-Meteo live feed', locating:'LOCALISEREN\u2026', acquiring:'Signaal zoeken',
+    signalLost:'SIGNAAL VERLOREN', windDir:'Windrichting', gustsUp:'Windstoten tot',
+    feelsLike:'Gevoelstemperatuur', dewPtShort:'Dauwpunt', daytime:'Overdag', nighttime:"'s Nachts",
+    currentCond:'Actuele omstandigheden', humidity:'Luchtvochtigheid', relHumidity:'Relatieve vochtigheid',
+    pressureMSL:'Luchtdruk (MSL)', surface:'Oppervlaktedruk', cloudCover:'Bewolking',
+    mostlyClear:'Grotendeels helder', partlyCloudy:'Gedeeltelijk bewolkt', overcast:'Bewolkt',
+    visibility:'Zichtbaarheid', excellent:'Uitstekend', good:'Goed', moderate:'Matig', poor:'Slecht',
+    precip:'Neerslag', rain:'Regen', snow:'Sneeuw', showers:'Buien',
+    precipProb:'Neerslagkans', convShowers:'Convectieve buien', uvIndex:'UV-index',
+    low:'Laag', high:'Hoog', veryHigh:'Zeer hoog', extreme:'Extreem',
+    dewPoint:'Dauwpunt', uncomfortable:'Oncomfortabel', humid:'Vochtig', comfortable:'Aangenaam', dry:'Droog',
+    apparentTemp:'Gevoelstemperatuur', perceivedTemp:'Gevoelstemperatuur',
+    swRad:'Kortgolvige straling', intense:'Intensief', minimal:'Minimaal',
+    snowfall:'Sneeuwval', snowDepth:'Sneeuwdiepte equivalent', wmoCode:'WMO-code',
+    history24h:'24-uurs geschiedenis', temperature:'Temperatuur', updated:'Bijgewerkt',
+    geoDefault:'Locatie geweigerd \u2014 standaard',
+    wmo:{0:'Heldere hemel',1:'Grotendeels helder',2:'Gedeeltelijk bewolkt',3:'Bewolkt',
+      45:'Mist',48:'IJsmist',51:'Lichte motregen',53:'Motregen',55:'Zware motregen',
+      56:'Lichte ijsmotregen',57:'IJsmotregen',61:'Lichte regen',63:'Regen',65:'Zware regen',
+      66:'Lichte ijsregen',67:'IJsregen',71:'Lichte sneeuw',73:'Sneeuw',75:'Zware sneeuw',
+      77:'Sneeuwkorrels',80:'Lichte buien',81:'Buien',82:'Hevige buien',
+      85:'Sneeuwbuien',86:'Zware sneeuwbuien',95:'Onweer',96:'Onweer met hagel',99:'Onweer met hagel'}
+  },
+  pl: {
+    brandSub:'Open-Meteo na \u017cywo', locating:'LOKALIZOWANIE\u2026', acquiring:'Szukanie sygna\u0142u',
+    signalLost:'UTRACONO SYGNA\u0141', windDir:'Kierunek wiatru', gustsUp:'Porywy do',
+    feelsLike:'Odczuwalna', dewPtShort:'Punkt rosy', daytime:'Dzie\u0144', nighttime:'Noc',
+    currentCond:'Aktualne warunki', humidity:'Wilgotno\u015b\u0107', relHumidity:'Wilgotno\u015b\u0107 wzgl\u0119dna',
+    pressureMSL:'Ci\u015bnienie (MSL)', surface:'Ci\u015bnienie przy gruncie', cloudCover:'Zachmurzenie',
+    mostlyClear:'Przewa\u017cnie pogodnie', partlyCloudy:'Cz\u0119\u015bciowo zachmurzone', overcast:'Pochmurno',
+    visibility:'Widoczno\u015b\u0107', excellent:'Doskona\u0142a', good:'Dobra', moderate:'Umiarkowana', poor:'S\u0142aba',
+    precip:'Opady', rain:'Deszcz', snow:'\u015anieg', showers:'Przelotne opady',
+    precipProb:'Prawdop. opadu', convShowers:'Opady konwekcyjne', uvIndex:'Indeks UV',
+    low:'Niski', high:'Wysoki', veryHigh:'Bardzo wysoki', extreme:'Ekstremalny',
+    dewPoint:'Punkt rosy', uncomfortable:'Niekomfortowo', humid:'Wilgotno', comfortable:'Komfortowo', dry:'Sucho',
+    apparentTemp:'Temp. odczuwalna', perceivedTemp:'Temperatura odczuwalna',
+    swRad:'Promieniowanie kr\xf3tkofalowe', intense:'Intensywne', minimal:'Minimalne',
+    snowfall:'Opady \u015bniegu', snowDepth:'G\u0142\u0119boko\u015b\u0107 \u015bniegu', wmoCode:'Kod WMO',
+    history24h:'Historia 24 godziny', temperature:'Temperatura', updated:'Zaktualizowano',
+    geoDefault:'Geolokalizacja odm\xf3wiona \u2014 domy\u015blna',
+    wmo:{0:'Bezchmurnie',1:'Przewa\u017cnie bezchmurnie',2:'Cz\u0119\u015bciowo zachmurzone',3:'Pochmurno',
+      45:'Mg\u0142a',48:'Mg\u0142a oszroniona',51:'Lekka mgie\u0142ka',53:'Mgie\u0142ka',55:'G\u0119sta mgie\u0142ka',
+      56:'Lekka marz\u0105ca mgie\u0142ka',57:'Marz\u0105ca mgie\u0142ka',61:'Lekki deszcz',63:'Deszcz',65:'Ulewny deszcz',
+      66:'Lekki marz\u0105cy deszcz',67:'Marz\u0105cy deszcz',71:'Lekki \u015bnieg',73:'\u015anieg',75:'Intensywny \u015bnieg',
+      77:'Ziarna \u015bniegu',80:'Lekkie przelotne opady',81:'Przelotne opady',82:'Gwa\u0142towne opady',
+      85:'Przelotne \u015bnie\u017cyce',86:'Intensywne \u015bnie\u017cyce',95:'Burza',96:'Burza z gradem',99:'Burza z gradem'}
+  },
+  sv: {
+    brandSub:'Open-Meteo livefeed', locating:'LOKALISERAR\u2026', acquiring:'H\xe4mtar signal',
+    signalLost:'SIGNAL TAPPAD', windDir:'Vindriktning', gustsUp:'Byar upp till',
+    feelsLike:'K\xe4nns som', dewPtShort:'Daggpunkt', daytime:'Dagtid', nighttime:'Nattetid',
+    currentCond:'Aktuella f\xf6rh\xe5llanden', humidity:'Luftfuktighet', relHumidity:'Relativ luftfuktighet',
+    pressureMSL:'Lufttryck (MSL)', surface:'Marktryck', cloudCover:'Molnt\xe4cke',
+    mostlyClear:'Mestadels klart', partlyCloudy:'Delvis molnigt', overcast:'Mulet',
+    visibility:'Sikt', excellent:'Utm\xe4rkt', good:'Bra', moderate:'M\xe5ttlig', poor:'D\xe5lig',
+    precip:'Nederb\xf6rd', rain:'Regn', snow:'Sn\xf6', showers:'Skurar',
+    precipProb:'Sannolikhet ndb', convShowers:'Konvektiva skurar', uvIndex:'UV-index',
+    low:'L\xe5g', high:'H\xf6g', veryHigh:'Mycket h\xf6g', extreme:'Extrem',
+    dewPoint:'Daggpunkt', uncomfortable:'Obeh\xe4gligt', humid:'Fuktigt', comfortable:'Beh\xe4gligt', dry:'Torrt',
+    apparentTemp:'K\xe4nns som', perceivedTemp:'Upplevd temperatur',
+    swRad:'Kortv\xe5gsstr\xe5lning', intense:'Intensiv', minimal:'Minimal',
+    snowfall:'Sn\xf6fall', snowDepth:'Sn\xf6djupsekvivalent', wmoCode:'WMO-kod',
+    history24h:'24-timmarshistorik', temperature:'Temperatur', updated:'Uppdaterad',
+    geoDefault:'Geolokalisering nekad \u2014 standard',
+    wmo:{0:'Klar himmel',1:'Mestadels klart',2:'Delvis molnigt',3:'Mulet',
+      45:'Dimma',48:'Rimfrostdimma',51:'L\xe4tt duggregn',53:'Duggregn',55:'T\xe4tt duggregn',
+      56:'L\xe4tt underkylt duggregn',57:'Underkylt duggregn',61:'L\xe4tt regn',63:'Regn',65:'Kraftigt regn',
+      66:'L\xe4tt underkylt regn',67:'Underkylt regn',71:'L\xe4tt sn\xf6fall',73:'Sn\xf6fall',75:'Kraftigt sn\xf6fall',
+      77:'Sn\xf6korn',80:'L\xe4tta skurar',81:'Skurar',82:'Kraftiga skurar',
+      85:'Sn\xf6skurar',86:'Kraftiga sn\xf6skurar',95:'\xc5ska',96:'\xc5ska med hagel',99:'\xc5ska med hagel'}
+  },
+  ru: {
+    brandSub:'Open-Meteo \u0432 \u0440\u0435\u0430\u043b\u044c\u043d\u043e\u043c \u0432\u0440\u0435\u043c\u0435\u043d\u0438',
+    locating:'\u041e\u041f\u0420\u0415\u0414\u0415\u041b\u0415\u041d\u0418\u0415\u2026',
+    acquiring:'\u041f\u043e\u043b\u0443\u0447\u0435\u043d\u0438\u0435 \u0441\u0438\u0433\u043d\u0430\u043b\u0430',
+    signalLost:'\u0421\u0418\u0413\u041d\u0410\u041b \u041f\u041e\u0422\u0415\u0420\u042f\u041d',
+    windDir:'\u041d\u0430\u043f\u0440\u0430\u0432\u043b\u0435\u043d\u0438\u0435 \u0432\u0435\u0442\u0440\u0430',
+    gustsUp:'\u041f\u043e\u0440\u044b\u0432\u044b \u0434\u043e',
+    feelsLike:'\u041e\u0449\u0443\u0449\u0430\u0435\u0442\u0441\u044f', dewPtShort:'\u0422\u043e\u0447\u043a\u0430 \u0440\u043e\u0441\u044b',
+    daytime:'\u0414\u0435\u043d\u044c', nighttime:'\u041d\u043e\u0447\u044c',
+    currentCond:'\u0422\u0435\u043a\u0443\u0449\u0438\u0435 \u0443\u0441\u043b\u043e\u0432\u0438\u044f',
+    humidity:'\u0412\u043b\u0430\u0436\u043d\u043e\u0441\u0442\u044c', relHumidity:'\u041e\u0442\u043d\u043e\u0441. \u0432\u043b\u0430\u0436\u043d\u043e\u0441\u0442\u044c',
+    pressureMSL:'\u0414\u0430\u0432\u043b\u0435\u043d\u0438\u0435 (MSL)', surface:'\u0423 \u043f\u043e\u0432\u0435\u0440\u0445\u043d\u043e\u0441\u0442\u0438',
+    cloudCover:'\u041e\u0431\u043b\u0430\u0447\u043d\u043e\u0441\u0442\u044c',
+    mostlyClear:'\u0412 \u043e\u0441\u043d\u043e\u0432\u043d\u043e\u043c \u044f\u0441\u043d\u043e',
+    partlyCloudy:'\u041f\u0435\u0440\u0435\u043c. \u043e\u0431\u043b\u0430\u0447\u043d\u043e\u0441\u0442\u044c',
+    overcast:'\u041f\u0430\u0441\u043c\u0443\u0440\u043d\u043e',
+    visibility:'\u0412\u0438\u0434\u0438\u043c\u043e\u0441\u0442\u044c',
+    excellent:'\u041e\u0442\u043b\u0438\u0447\u043d\u0430\u044f', good:'\u0425\u043e\u0440\u043e\u0448\u0430\u044f',
+    moderate:'\u0423\u043c\u0435\u0440\u0435\u043d\u043d\u0430\u044f', poor:'\u041f\u043b\u043e\u0445\u0430\u044f',
+    precip:'\u041e\u0441\u0430\u0434\u043a\u0438', rain:'\u0414\u043e\u0436\u0434\u044c', snow:'\u0421\u043d\u0435\u0433', showers:'\u041b\u0438\u0432\u043d\u0438',
+    precipProb:'\u0412\u0435\u0440\u043e\u044f\u0442\u043d\u043e\u0441\u0442\u044c \u043e\u0441\u0430\u0434\u043a\u043e\u0432',
+    convShowers:'\u041a\u043e\u043d\u0432. \u043b\u0438\u0432\u043d\u0438',
+    uvIndex:'\u0423\u0424-\u0438\u043d\u0434\u0435\u043a\u0441',
+    low:'\u041d\u0438\u0437\u043a\u0438\u0439', high:'\u0412\u044b\u0441\u043e\u043a\u0438\u0439',
+    veryHigh:'\u041e\u0447\u0435\u043d\u044c \u0432\u044b\u0441\u043e\u043a\u0438\u0439', extreme:'\u042d\u043a\u0441\u0442\u0440\u0435\u043c\u0430\u043b\u044c\u043d\u044b\u0439',
+    dewPoint:'\u0422\u043e\u0447\u043a\u0430 \u0440\u043e\u0441\u044b',
+    uncomfortable:'\u041d\u0435\u043a\u043e\u043c\u0444\u043e\u0440\u0442\u043d\u043e', humid:'\u0412\u043b\u0430\u0436\u043d\u043e',
+    comfortable:'\u041a\u043e\u043c\u0444\u043e\u0440\u0442\u043d\u043e', dry:'\u0421\u0443\u0445\u043e',
+    apparentTemp:'\u041e\u0449\u0443\u0449\u0430\u0435\u043c\u0430\u044f', perceivedTemp:'\u041e\u0449\u0443\u0449\u0430\u0435\u043c\u0430\u044f \u0442\u0435\u043c\u043f.',
+    swRad:'\u041a\u043e\u0440\u043e\u0442\u043a\u043e\u0432. \u0440\u0430\u0434\u0438\u0430\u0446\u0438\u044f',
+    intense:'\u0418\u043d\u0442\u0435\u043d\u0441\u0438\u0432\u043d\u0430\u044f', minimal:'\u041c\u0438\u043d\u0438\u043c\u0430\u043b\u044c\u043d\u0430\u044f',
+    snowfall:'\u0421\u043d\u0435\u0433\u043e\u043f\u0430\u0434', snowDepth:'\u042d\u043a\u0432\u0438\u0432. \u0441\u043d\u0435\u0433\u043e\u043f\u0430\u0434\u0430',
+    wmoCode:'\u041a\u043e\u0434 \u0412\u041c\u041e',
+    history24h:'\u0418\u0441\u0442\u043e\u0440\u0438\u044f 24 \u0447\u0430\u0441\u0430', temperature:'\u0422\u0435\u043c\u043f\u0435\u0440\u0430\u0442\u0443\u0440\u0430',
+    updated:'\u041e\u0431\u043d\u043e\u0432\u043b\u0435\u043d\u043e',
+    geoDefault:'\u0413\u0435\u043e\u043b\u043e\u043a\u0430\u0446\u0438\u044f \u0437\u0430\u043f\u0440\u0435\u0449\u0435\u043d\u0430 \u2014 \u043f\u043e \u0443\u043c\u043e\u043b\u0447\u0430\u043d\u0438\u044e',
+    wmo:{0:'\u042f\u0441\u043d\u043e',1:'\u041f\u0440\u0435\u0438\u043c. \u044f\u0441\u043d\u043e',2:'\u041f\u0435\u0440\u0435\u043c. \u043e\u0431\u043b\u0430\u0447\u043d\u043e\u0441\u0442\u044c',3:'\u041f\u0430\u0441\u043c\u0443\u0440\u043d\u043e',
+      45:'\u0422\u0443\u043c\u0430\u043d',48:'\u0413\u043e\u043b\u043e\u043b\u0451\u0434\u043d\u044b\u0439 \u0442\u0443\u043c\u0430\u043d',
+      51:'\u0421\u043b\u0430\u0431\u0430\u044f \u043c\u043e\u0440\u043e\u0441\u044c',53:'\u041c\u043e\u0440\u043e\u0441\u044c',55:'\u0413\u0443\u0441\u0442\u0430\u044f \u043c\u043e\u0440\u043e\u0441\u044c',
+      56:'\u0421\u043b. \u043f\u0435\u0440\u0435\u043e\u0445\u043b. \u0434\u043e\u0436\u0434\u044c',57:'\u041f\u0435\u0440\u0435\u043e\u0445\u043b. \u0434\u043e\u0436\u0434\u044c',
+      61:'\u0421\u043b\u0430\u0431\u044b\u0439 \u0434\u043e\u0436\u0434\u044c',63:'\u0414\u043e\u0436\u0434\u044c',65:'\u0421\u0438\u043b\u044c\u043d\u044b\u0439 \u0434\u043e\u0436\u0434\u044c',
+      66:'\u0421\u043b. \u043b\u0435\u0434\u044f\u043d\u043e\u0439 \u0434\u043e\u0436\u0434\u044c',67:'\u041b\u0435\u0434\u044f\u043d\u043e\u0439 \u0434\u043e\u0436\u0434\u044c',
+      71:'\u0421\u043b\u0430\u0431\u044b\u0439 \u0441\u043d\u0435\u0433',73:'\u0421\u043d\u0435\u0433',75:'\u0421\u0438\u043b\u044c\u043d\u044b\u0439 \u0441\u043d\u0435\u0433',
+      77:'\u0421\u043d\u0435\u0436\u043d\u0430\u044f \u043a\u0440\u0443\u043f\u0430',
+      80:'\u0421\u043b\u0430\u0431\u044b\u0435 \u043b\u0438\u0432\u043d\u0438',81:'\u041b\u0438\u0432\u043d\u0438',82:'\u0421\u0438\u043b\u044c\u043d\u044b\u0435 \u043b\u0438\u0432\u043d\u0438',
+      85:'\u0421\u043d\u0435\u0433\u043e\u043f\u0430\u0434\u044b',86:'\u0421\u0438\u043b\u044c\u043d\u044b\u0435 \u0441\u043d\u0435\u0433\u043e\u043f\u0430\u0434\u044b',
+      95:'\u0413\u0440\u043e\u0437\u0430',96:'\u0413\u0440\u043e\u0437\u0430 \u0441 \u0433\u0440\u0430\u0434\u043e\u043c',99:'\u0413\u0440\u043e\u0437\u0430 \u0441 \u0433\u0440\u0430\u0434\u043e\u043c'}
+  },
+  ja: {
+    brandSub:'Open-Meteo \u30e9\u30a4\u30d6', locating:'\u4f4d\u7f6e\u60c5\u5831\u53d6\u5f97\u4e2d\u2026',
+    acquiring:'\u4fe1\u53f7\u3092\u53d6\u5f97\u4e2d', signalLost:'\u4fe1\u53f7\u304c\u5207\u65ad\u3055\u308c\u307e\u3057\u305f',
+    windDir:'\u98a8\u5411\u304d', gustsUp:'\u7a81\u98a8',
+    feelsLike:'\u4f53\u611f\u6e29\u5ea6', dewPtShort:'\u9732\u70b9\u6e29\u5ea6',
+    daytime:'\u663c\u9593', nighttime:'\u591c\u9593',
+    currentCond:'\u73fe\u5728\u306e\u6c17\u8c61\u72b6\u6cc1',
+    humidity:'\u6e7f\u5ea6', relHumidity:'\u76f8\u5bfe\u6e7f\u5ea6',
+    pressureMSL:'\u6c17\u5727 (MSL)', surface:'\u5730\u4e0a\u6c17\u5727',
+    cloudCover:'\u96f2\u91cf',
+    mostlyClear:'\u307b\u307c\u6674\u308c', partlyCloudy:'\u4e00\u90e8\u66c7\u308a', overcast:'\u66c7\u308a',
+    visibility:'\u8996\u7a0b',
+    excellent:'\u975e\u5e38\u306b\u826f\u3044', good:'\u826f\u3044', moderate:'\u666e\u901a', poor:'\u60aa\u3044',
+    precip:'\u964d\u6c34\u91cf', rain:'\u96e8', snow:'\u96ea', showers:'\u306b\u308f\u304b\u96e8',
+    precipProb:'\u964d\u6c34\u78ba\u7387', convShowers:'\u5bfe\u6d41\u6027\u306b\u308f\u304b\u96e8',
+    uvIndex:'UV\u6307\u6570',
+    low:'\u4f4e\u3044', high:'\u9ad8\u3044', veryHigh:'\u975e\u5e38\u306b\u9ad8\u3044', extreme:'\u5371\u967a',
+    dewPoint:'\u9732\u70b9\u6e29\u5ea6',
+    uncomfortable:'\u4e0d\u5feb', humid:'\u591a\u6e7f', comfortable:'\u5feb\u9069', dry:'\u4e7e\u71e5',
+    apparentTemp:'\u4f53\u611f\u6e29\u5ea6', perceivedTemp:'\u4f53\u611f\u6e29\u5ea6',
+    swRad:'\u77ed\u6ce2\u653e\u5c04', intense:'\u5f37\u3044', minimal:'\u6700\u5c0f',
+    snowfall:'\u964d\u96ea\u91cf', snowDepth:'\u7a4d\u96ea\u6df1\u63db\u7b97',
+    wmoCode:'WMO\u30b3\u30fc\u30c9',
+    history24h:'\u904e\u53bb24\u6642\u9593\u306e\u5c65\u6b74', temperature:'\u6c17\u6e29',
+    updated:'\u66f4\u65b0',
+    geoDefault:'\u4f4d\u7f6e\u60c5\u5831\u304c\u62d2\u5426\u3055\u308c\u307e\u3057\u305f',
+    wmo:{0:'\u5feb\u6674',1:'\u307b\u307c\u6674\u308c',2:'\u4e00\u90e8\u66c7\u308a',3:'\u66c7\u308a',
+      45:'\u9727',48:'\u6c37\u96e3',51:'\u5c0f\u96e8\uff08\u5c0f\uff09',53:'\u5c0f\u96e8',55:'\u5c0f\u96e8\uff08\u5927\uff09',
+      56:'\u7740\u6c37\u6027\u5c0f\u96e8\uff08\u5c0f\uff09',57:'\u7740\u6c37\u6027\u5c0f\u96e8',
+      61:'\u5c0f\u96e8',63:'\u96e8',65:'\u5927\u96e8',66:'\u7740\u6c37\u6027\u96e8\uff08\u5c0f\uff09',67:'\u7740\u6c37\u6027\u96e8',
+      71:'\u5c0f\u96ea',73:'\u96ea',75:'\u5927\u96ea',77:'\u970d',
+      80:'\u306b\u308f\u304b\u96e8\uff08\u5c0f\uff09',81:'\u306b\u308f\u304b\u96e8',82:'\u6fc0\u3057\u3044\u306b\u308f\u304b\u96e8',
+      85:'\u96ea\u306e\u306b\u308f\u304b\u964d\u308a',86:'\u6fc0\u3057\u3044\u96ea\u306e\u306b\u308f\u304b\u964d\u308a',
+      95:'\u96f7\u96e8',96:'\u96f9\u3092\u4f34\u3046\u96f7\u96e8',99:'\u96f9\u3092\u4f34\u3046\u96f7\u96e8'}
+  },
+  zh: {
+    brandSub:'Open-Meteo \u5b9e\u65f6\u6570\u636e', locating:'\u5b9a\u4f4d\u4e2d\u2026',
+    acquiring:'\u6b63\u5728\u83b7\u53d6\u4fe1\u53f7', signalLost:'\u4fe1\u53f7\u4e2d\u65ad',
+    windDir:'\u98ce\u5411', gustsUp:'\u9635\u98ce\u8fbe',
+    feelsLike:'\u4f53\u611f\u6e29\u5ea6', dewPtShort:'\u9732\u70b9',
+    daytime:'\u767d\u5929', nighttime:'\u591c\u95f4',
+    currentCond:'\u5f53\u524d\u5929\u6c14',
+    humidity:'\u6e7f\u5ea6', relHumidity:'\u76f8\u5bf9\u6e7f\u5ea6',
+    pressureMSL:'\u6c14\u538b (MSL)', surface:'\u5730\u9762\u6c14\u538b',
+    cloudCover:'\u4e91\u91cf',
+    mostlyClear:'\u5927\u90e8\u6674\u5929', partlyCloudy:'\u5c40\u90e8\u591a\u4e91', overcast:'\u9634\u5929',
+    visibility:'\u80fd\u89c1\u5ea6',
+    excellent:'\u6781\u4f73', good:'\u826f\u597d', moderate:'\u4e00\u822c', poor:'\u8f83\u5dee',
+    precip:'\u964d\u6c34\u91cf', rain:'\u96e8', snow:'\u96ea', showers:'\u9635\u96e8',
+    precipProb:'\u964d\u6c34\u6982\u7387', convShowers:'\u5bf9\u6d41\u9635\u96e8',
+    uvIndex:'\u7d2b\u5916\u7ebf\u6307\u6570',
+    low:'\u4f4e', high:'\u9ad8', veryHigh:'\u5f88\u9ad8', extreme:'\u6781\u9ad8',
+    dewPoint:'\u9732\u70b9',
+    uncomfortable:'\u4e0d\u8212\u9002', humid:'\u6f6e\u6e7f', comfortable:'\u8212\u9002', dry:'\u5e72\u71e5',
+    apparentTemp:'\u4f53\u611f\u6e29\u5ea6', perceivedTemp:'\u4f53\u611f\u6e29\u5ea6',
+    swRad:'\u77ed\u6ce2\u8f90\u5c04', intense:'\u5f3a\u70c8', minimal:'\u6781\u5c11',
+    snowfall:'\u964d\u96ea\u91cf', snowDepth:'\u7b49\u6548\u79ef\u96ea\u6df1\u5ea6',
+    wmoCode:'WMO\u4ee3\u7801',
+    history24h:'24\u5c0f\u65f6\u5386\u53f2', temperature:'\u6c14\u6e29',
+    updated:'\u66f4\u65b0\u4e8e',
+    geoDefault:'\u4f4d\u7f6e\u83b7\u53d6\u5931\u8d25 \u2014 \u4f7f\u7528\u9ed8\u8ba4\u4f4d\u7f6e',
+    wmo:{0:'\u6674',1:'\u5927\u90e8\u6674\u5929',2:'\u5c40\u90e8\u591a\u4e91',3:'\u9634\u5929',
+      45:'\u96fe',48:'\u51bb\u96fe',51:'\u5c0f\u6bdb\u6bdb\u96e8',53:'\u6bdb\u6bdb\u96e8',55:'\u5927\u6bdb\u6bdb\u96e8',
+      56:'\u8f7b\u5fae\u51bb\u96e8',57:'\u51bb\u96e8',61:'\u5c0f\u96e8',63:'\u4e2d\u96e8',65:'\u5927\u96e8',
+      66:'\u8f7b\u5fae\u51bb\u96e8',67:'\u51bb\u96e8',71:'\u5c0f\u96ea',73:'\u4e2d\u96ea',75:'\u5927\u96ea',
+      77:'\u7c73\u96ea',80:'\u9635\u96e8\uff08\u5c0f\uff09',81:'\u9635\u96e8',82:'\u66b4\u9635\u96e8',
+      85:'\u9635\u96ea',86:'\u5927\u9635\u96ea',95:'\u96f7\u96e8',96:'\u96f7\u96e8\u4f34\u51b0\u96f9',99:'\u96f7\u96e8\u4f34\u51b0\u96f9'}
+  },
+  ko: {
+    brandSub:'Open-Meteo \uc2e4\uc2dc\uac04', locating:'\uc704\uce58 \ud655\uc778 \uc911\u2026',
+    acquiring:'\uc2e0\ud638 \uc218\uc2e0 \uc911', signalLost:'\uc2e0\ud638 \ub054\uae40',
+    windDir:'\ud48d\ud5a5', gustsUp:'\ub3cc\ud48d \ucd5c\ub300',
+    feelsLike:'\uccb4\uac10 \uc628\ub3c4', dewPtShort:'\uc774\uc2ac\uc810',
+    daytime:'\ub099', nighttime:'\ubc24',
+    currentCond:'\ud604\uc7ac \ub0a0\uc528',
+    humidity:'\uc2b5\ub3c4', relHumidity:'\uc0c1\ub300 \uc2b5\ub3c4',
+    pressureMSL:'\uae30\uc555 (MSL)', surface:'\uc9c0\uba74 \uae30\uc555',
+    cloudCover:'\uad6c\ub984\ub7c9',
+    mostlyClear:'\ub300\uccb4\ub85c \ub9d1\uc74c', partlyCloudy:'\uad6c\ub984 \uc870\uae08', overcast:'\ud750\ub9bc',
+    visibility:'\uc2dc\uc815',
+    excellent:'\ub9e4\uc6b0 \uc88b\uc74c', good:'\uc88b\uc74c', moderate:'\ubcf4\ud1b5', poor:'\ub098\uc05c',
+    precip:'\uac15\uc218\ub7c9', rain:'\ube44', snow:'\ub208', showers:'\uc18c\ub098\uae30',
+    precipProb:'\uac15\uc218 \ud655\ub960', convShowers:'\ub300\ub958\uc131 \uc18c\ub098\uae30',
+    uvIndex:'UV \uc9c0\uc218',
+    low:'\ub099\uc74c', high:'\ub192\uc74c', veryHigh:'\ub9e4\uc6b0 \ub192\uc74c', extreme:'\uc704\ud5d8',
+    dewPoint:'\uc774\uc2ac\uc810',
+    uncomfortable:'\ubd88\ucfde', humid:'\uc2b5\ud568', comfortable:'\ucfe8\uc801', dry:'\uac74\uc870',
+    apparentTemp:'\uccb4\uac10 \uc628\ub3c4', perceivedTemp:'\uccb4\uac10 \uc628\ub3c4',
+    swRad:'\ub2e8\ud30c \ubcf5\uc0ac', intense:'\uac15\ud568', minimal:'\ucd5c\uc18c',
+    snowfall:'\uac15\uc124\ub7c9', snowDepth:'\uc801\uc124 \ub4f1\uac00 \uae4a\uc774',
+    wmoCode:'WMO \ucf54\ub4dc',
+    history24h:'24\uc2dc\uac04 \uae30\ub85d', temperature:'\uae30\uc628',
+    updated:'\uc5c5\ub370\uc774\ud2b8',
+    geoDefault:'\uc704\uce58 \uc811\uadfc \uac70\ubd80 \u2014 \uae30\ubcf8\uac12 \uc0ac\uc6a9',
+    wmo:{0:'\ub9d1\uc74c',1:'\ub300\uccb4\ub85c \ub9d1\uc74c',2:'\uad6c\ub984 \uc870\uae08',3:'\ud750\ub9bc',
+      45:'\uc548\uac1c',48:'\uc0ac\ub9bc \uc548\uac1c',51:'\uac00\ub294 \uc774\uc2ac\ube44',53:'\uc774\uc2ac\ube44',55:'\uc9d1\uc740 \uc774\uc2ac\ube44',
+      56:'\uc5bc\uc5b4\ubd99\ub294 \uc774\uc2ac\ube44\uff08\uc57d\uff09',57:'\uc5bc\uc5b4\ubd99\ub294 \uc774\uc2ac\ube44',
+      61:'\uc57d\ud55c \ube44',63:'\ube44',65:'\uac15\ud55c \ube44',66:'\uc5bc\uc5b4\ubd99\ub294 \ube44\uff08\uc57d\uff09',67:'\uc5bc\uc5b4\ubd99\ub294 \ube44',
+      71:'\uc57d\ud55c \ub208',73:'\ub208',75:'\uac15\ud55c \ub208',77:'\uc8cc\ub77c\uae30\ub208',
+      80:'\uc57d\ud55c \uc18c\ub098\uae30',81:'\uc18c\ub098\uae30',82:'\uac15\ud55c \uc18c\ub098\uae30',
+      85:'\ub208\uc18c\ub098\uae30',86:'\uac15\ud55c \ub208\uc18c\ub098\uae30',
+      95:'\ub1cc\uc6b0',96:'\uc6b0\ubc15\uc744 \ub3d9\ubc18\ud55c \ub1cc\uc6b0',99:'\uc6b0\ubc15\uc744 \ub3d9\ubc18\ud55c \ub1cc\uc6b0'}
+  },
+  tr: {
+    brandSub:'Open-Meteo canl\u0131 veri', locating:'KONUMLAN\u0130YOR\u2026', acquiring:'Sinyal al\u0131n\u0131yor',
+    signalLost:'S\u0130NYAL KAYBOLDU', windDir:'R\xfczgar y\xf6n\xfc', gustsUp:'R\xfczgar \u015fiddetine kadar',
+    feelsLike:'Hissettiriyor', dewPtShort:'\xc7i\u011f noktas\u0131', daytime:'G\xfcnd\xfcz', nighttime:'Gece',
+    currentCond:'Mevcut ko\u015fullar', humidity:'Nem', relHumidity:'G\xf6receli nem',
+    pressureMSL:'Bas\u0131n\xe7 (MSL)', surface:'Y\xfczey bas\u0131nc\u0131', cloudCover:'Bulutluluk',
+    mostlyClear:'Genellikle a\xe7\u0131k', partlyCloudy:'K\u0131smen bulutlu', overcast:'Kapal\u0131',
+    visibility:'G\xf6r\xfc\u015f', excellent:'M\xfckemmel', good:'\u0130yi', moderate:'Orta', poor:'Zay\u0131f',
+    precip:'Ya\u011f\u0131\u015f', rain:'Ya\u011fmur', snow:'Kar', showers:'Sa\u011fanak',
+    precipProb:'Ya\u011f\u0131\u015f olas\u0131l\u0131\u011f\u0131', convShowers:'Konvektif sa\u011fanak', uvIndex:'UV endeksi',
+    low:'D\xfc\u015f\xfck', high:'Y\xfcksek', veryHigh:'\xc7ok y\xfcksek', extreme:'A\u015f\u0131r\u0131',
+    dewPoint:'\xc7i\u011f noktas\u0131', uncomfortable:'Rahats\u0131z edici', humid:'Nemli', comfortable:'Rahat', dry:'Kuru',
+    apparentTemp:'Hissedilen', perceivedTemp:'Hissedilen s\u0131cakl\u0131k',
+    swRad:'K\u0131sa dalga rad.', intense:'Yo\u011fun', minimal:'Minimum',
+    snowfall:'Kar ya\u011f\u0131\u015f\u0131', snowDepth:'Kar derinli\u011fi e\u015fde\u011feri', wmoCode:'WMO Kodu',
+    history24h:'24 saatlik ge\xe7mi\u015f', temperature:'S\u0131cakl\u0131k', updated:'G\xfcncellendi',
+    geoDefault:'Konum reddedildi \u2014 varsay\u0131lan',
+    wmo:{0:'A\xe7\u0131k g\xf6ky\xfcz\xfc',1:'Genellikle a\xe7\u0131k',2:'K\u0131smen bulutlu',3:'Kapal\u0131',
+      45:'Sis',48:'K\u0131ra\u011f sis',51:'Hafif \xe7is',53:'\xc7is',55:'Yo\u011fun \xe7is',
+      56:'Hafif dondurucu \xe7is',57:'Dondurucu \xe7is',61:'Hafif ya\u011fmur',63:'Ya\u011fmur',65:'Kuvvetli ya\u011fmur',
+      66:'Hafif buzlanmal\u0131 ya\u011fmur',67:'Buzlanmal\u0131 ya\u011fmur',71:'Hafif kar',73:'Kar',75:'Yo\u011fun kar',
+      77:'Kar tanecikleri',80:'Hafif sa\u011fanak',81:'Sa\u011fanak',82:'Kuvvetli sa\u011fanak',
+      85:'Kar sa\u011fana\u011f\u0131',86:'Kuvvetli kar sa\u011fana\u011f\u0131',95:'F\u0131rt\u0131na',96:'Doluyla f\u0131rt\u0131na',99:'Doluyla f\u0131rt\u0131na'}
+  },
+};
+
+const _L = (() => {
+    const code = navigator.language.split('-')[0];
+    return LANGS[code] || LANGS.en;
+})();
+function t(key) { return _L[key] ?? LANGS.en[key] ?? key; }
+
+// Apply language to static DOM elements (t() now available)
+document.querySelector('.brand-sub').textContent = t('brandSub');
+document.querySelector('.state-label').textContent = t('acquiring');
+document.getElementById('loc-name').textContent = t('locating');
+
+/* ── WMO icons + helpers ────────────────────────── */
+const WMO_ICONS = {
+    0:'☀️',1:'🌤️',2:'⛅',3:'☁️',45:'🌫️',48:'🌫️',
+    51:'🌦️',53:'🌦️',55:'🌧️',56:'🌨️',57:'🌨️',
+    61:'🌧️',63:'🌧️',65:'🌧️',66:'🌨️',67:'🌨️',
+    71:'❄️',73:'❄️',75:'❄️',77:'🌨️',
+    80:'🌦️',81:'🌧️',82:'⛈️',85:'🌨️',86:'🌨️',
+    95:'⛈️',96:'⛈️',99:'⛈️'
+};
+
+function wmo(code) {
+    return { text: (_L.wmo?.[code] ?? LANGS.en.wmo[code] ?? `Code ${code}`), icon: WMO_ICONS[code] || '🌡️' };
+}
+
+/* ── Helpers ────────────────────────────────────── */
+function degToCompass(d) {
+    const dirs = ['N','NNE','NE','ENE','E','ESE','SE','SSE','S','SSW','SW','WSW','W','WNW','NW','NNW'];
+    return dirs[Math.round(d / 22.5) % 16];
+}
+
+function uvCategory(v) {
+    if (v <= 2)  return { label: t('low'),      cls:'val-green'  };
+    if (v <= 5)  return { label: t('moderate'), cls:'val-gold'   };
+    if (v <= 7)  return { label: t('high'),     cls:'val-accent' };
+    if (v <= 10) return { label: t('veryHigh'), cls:'val-red'    };
+    return               { label: t('extreme'), cls:'val-red'    };
+}
+
+function visLabel(m) {
+    if (m >= 10000) return t('excellent');
+    if (m >= 5000)  return t('good');
+    if (m >= 1000)  return t('moderate');
+    return t('poor');
+}
+
+function compassSVG(deg, dark) {
+    const a = dark ? 'rgba(255,255,255,' : 'rgba(0,0,0,';
+    const cardTicks = [0,90,180,270].map(d => {
+        const r = (d - 90) * Math.PI / 180;
+        return `<line x1="${70+58*Math.cos(r)}" y1="${70+58*Math.sin(r)}" x2="${70+65*Math.cos(r)}" y2="${70+65*Math.sin(r)}" stroke="${a}0.28)" stroke-width="2"/>`;
+    }).join('');
+
+    const interTicks = [45,135,225,315].map(d => {
+        const r = (d - 90) * Math.PI / 180;
+        return `<line x1="${70+61*Math.cos(r)}" y1="${70+61*Math.sin(r)}" x2="${70+65*Math.cos(r)}" y2="${70+65*Math.sin(r)}" stroke="${a}0.12)" stroke-width="1"/>`;
+    }).join('');
+
+    return `<svg class="compass-svg" viewBox="0 0 140 140" xmlns="http://www.w3.org/2000/svg">
+        <circle cx="70" cy="70" r="65" fill="none" stroke="${a}0.07)" stroke-width="1"/>
+        <circle cx="70" cy="70" r="52" fill="none" stroke="${a}0.05)" stroke-width="1" stroke-dasharray="3 4"/>
+        ${cardTicks}${interTicks}
+        <text x="70"  y="9"   text-anchor="middle" fill="${a}0.85)" font-family="JetBrains Mono,monospace" font-size="9" font-weight="500">N</text>
+        <text x="131" y="74"  text-anchor="middle" fill="${a}0.45)" font-family="JetBrains Mono,monospace" font-size="9">E</text>
+        <text x="70"  y="136" text-anchor="middle" fill="${a}0.45)" font-family="JetBrains Mono,monospace" font-size="9">S</text>
+        <text x="9"   y="74"  text-anchor="middle" fill="${a}0.45)" font-family="JetBrains Mono,monospace" font-size="9">W</text>
+        <g transform="rotate(${deg}, 70, 70)">
+            <line x1="70" y1="70" x2="70" y2="120" stroke="rgba(255,101,53,0.22)" stroke-width="1.5" stroke-linecap="round"/>
+            <line x1="70" y1="22" x2="70" y2="70"  stroke="#ff6535" stroke-width="2.5" stroke-linecap="round"/>
+            <polygon points="70,15 64.5,28 75.5,28" fill="#ff6535"/>
+        </g>
+        <circle cx="70" cy="70" r="3.5" fill="#ff6535"/>
+    </svg>`;
+}
+
+/* ── Card builders ──────────────────────────────── */
+function card(label, valueHTML, sub, barPct, barCls, delay) {
+    const bar = (barPct != null)
+        ? `<div class="bar"><div class="bar-inner ${barCls || 'bar-accent'}" style="width:0" data-pct="${Math.min(barPct,100)}"></div></div>`
+        : '';
+    return `<div class="card fi" style="animation-delay:${delay}s">
+        <div class="card-label">${label}</div>
+        <div class="card-value">${valueHTML}</div>
+        ${sub ? `<div class="card-sub">${sub}</div>` : ''}
+        ${bar}
+    </div>`;
+}
+
+/* ── Last-24h slice ─────────────────────────────── */
+function getLast24(times, values) {
+    const now = Date.now();
+    let idx = 0;
+    for (let i = 0; i < times.length; i++) {
+        if (new Date(times[i]).getTime() <= now) idx = i;
+    }
+    const start = Math.max(0, idx - 23);
+    return {
+        times:  times.slice(start, idx + 1),
+        values: values.slice(start, idx + 1)
+    };
+}
+
+/* ── Line chart SVG ─────────────────────────────── */
+function lineChart(times, values, color, unit, gradId) {
+    if (!values.length) return '<p style="color:var(--text-dim);font-size:11px;padding:16px 0">No data</p>';
+    const W = 400, H = 72, PLOT = 54;
+
+    const min = Math.min(...values);
+    const max = Math.max(...values);
+    const range = (max - min) || 1;
+
+    const pts = values.map((v, i) => [
+        (i / (values.length - 1)) * W,
+        PLOT - ((v - min) / range) * (PLOT - 6) - 3
+    ]);
+
+    const poly  = pts.map(([x,y]) => `${x.toFixed(1)},${y.toFixed(1)}`).join(' ');
+    const area  = `M${pts[0][0].toFixed(1)},${PLOT} ` +
+                  pts.map(([x,y]) => `L${x.toFixed(1)},${y.toFixed(1)}`).join(' ') +
+                  ` L${pts[pts.length-1][0].toFixed(1)},${PLOT} Z`;
+
+    // X-axis labels every 4h
+    const ticks = [];
+    for (let i = 0; i < times.length; i++) {
+        const h = new Date(times[i]).getHours();
+        if (h % 4 === 0) {
+            const x = (i / (values.length - 1)) * W;
+            ticks.push(`<text x="${x.toFixed(1)}" y="${H}" text-anchor="middle" fill="rgba(255,255,255,0.38)" font-family="JetBrains Mono,monospace" font-size="8">${String(h).padStart(2,'0')}</text>`);
+        }
+    }
+
+    // Min / max dots & labels
+    const minI = values.indexOf(min), maxI = values.indexOf(max);
+    const [minX, minY] = pts[minI], [maxX, maxY] = pts[maxI];
+    const minLabelY = Math.min(minY + 11, PLOT - 1);
+    const maxLabelY = Math.max(maxY - 4, 8);
+
+    return `<svg viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg" style="width:100%;display:block;overflow:visible">
+        <defs>
+            <linearGradient id="${gradId}" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stop-color="${color}" stop-opacity="0.28"/>
+                <stop offset="100%" stop-color="${color}" stop-opacity="0"/>
+            </linearGradient>
+        </defs>
+        <path d="${area}" fill="url(#${gradId})"/>
+        <polyline points="${poly}" fill="none" stroke="${color}" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"/>
+        <circle cx="${minX.toFixed(1)}" cy="${minY.toFixed(1)}" r="2.5" fill="${color}" opacity="0.75"/>
+        <circle cx="${maxX.toFixed(1)}" cy="${maxY.toFixed(1)}" r="2.5" fill="${color}" opacity="0.75"/>
+        <text x="${minX.toFixed(1)}" y="${minLabelY.toFixed(1)}" text-anchor="middle" fill="${color}" font-family="JetBrains Mono,monospace" font-size="8.5" opacity="0.9">${min % 1 === 0 ? min : min.toFixed(1)}${unit}</text>
+        <text x="${maxX.toFixed(1)}" y="${maxLabelY.toFixed(1)}" text-anchor="middle" fill="${color}" font-family="JetBrains Mono,monospace" font-size="8.5" opacity="0.9">${max % 1 === 0 ? max : max.toFixed(1)}${unit}</text>
+        ${ticks.join('')}
+    </svg>`;
+}
+
+/* ── Render ─────────────────────────────────────── */
+function render(data, locName, lat, lon) {
+    lastRenderArgs = [data, locName, lat, lon];
+    const c = data.current;
+    const hu = data.hourly;
+    const dark = document.documentElement.dataset.theme !== 'light';
+
+    const uv     = hu?.uv_index?.[0] ?? null;
+    const uvCat  = uv !== null ? uvCategory(uv) : null;
+    const visKm  = c.visibility != null ? (c.visibility / 1000).toFixed(1) : '—';
+    const w      = wmo(c.weather_code);
+    const dir    = degToCompass(c.wind_direction_10m);
+    const swRad  = c.shortwave_radiation != null ? Math.round(c.shortwave_radiation) : '—';
+
+    // Theme-aware chart colors
+    const tempColor = dark ? '#94b8d8' : '#2563eb';
+    const radColor  = dark ? '#ffc45e' : '#d97706';
+
+    // Precipitation prob from hourly[0]
+    const precipProb = hu?.precipitation_probability?.[0] ?? null;
+
+    // 24h history charts
+    const htimes = hu?.time ?? [];
+    const tempH  = getLast24(htimes, hu?.temperature_2m ?? []);
+    const radH   = getLast24(htimes, hu?.shortwave_radiation ?? []);
+
+    const html = `
+    <div class="hero fi" style="animation-delay:0.05s">
+        <div class="hero-left">
+            <div class="condition-row">
+                <div class="condition-icon">${w.icon}</div>
+                <div class="condition-text">${w.text}</div>
+            </div>
+            <div class="temp-row">
+                <div class="temp-val">${Math.round(c.temperature_2m)}</div>
+                <div class="temp-suffix">
+                    <div class="temp-deg">°C</div>
+                    <div class="temp-unit-label">Celsius</div>
+                </div>
+            </div>
+            <div class="sub-temps">
+                <span>${t('feelsLike')} <span>${Math.round(c.apparent_temperature)}°C</span></span>
+                <span>${t('dewPtShort')} <span>${Math.round(c.dew_point_2m)}°C</span></span>
+                ${c.is_day ? `<span>☀️ ${t('daytime')}</span>` : `<span>🌙 ${t('nighttime')}</span>`}
+            </div>
+        </div>
+
+        <div class="seg7-wrap">
+            <div id="seg7-clock"></div>
+        </div>
+
+        <div class="wind-panel">
+            <div class="wind-panel-label">${t('windDir')}</div>
+            ${compassSVG(c.wind_direction_10m, dark)}
+            <div class="wind-nums">
+                <div class="wind-spd">${Math.round(c.wind_speed_10m)}<span class="unit"> km/h</span></div>
+                <div class="wind-dir-label">${dir} &middot; ${c.wind_direction_10m}°</div>
+                <div class="wind-gust">${t('gustsUp')} ${Math.round(c.wind_gusts_10m)} km/h</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="rule fi" style="animation-delay:0.12s"></div>
+
+    <div class="section-head fi" style="animation-delay:0.14s">
+        <div class="section-title">${t('currentCond')}</div>
+        <div class="section-line"></div>
+    </div>
+
+    <div class="metrics-grid">
+        ${card(t('humidity'),
+            `${c.relative_humidity_2m}<span class="u">%</span>`,
+            t('relHumidity'),
+            c.relative_humidity_2m, 'bar-green', 0.18)}
+
+        ${card(t('pressureMSL'),
+            `${Math.round(c.pressure_msl)}<span class="u">hPa</span>`,
+            `${t('surface')}: ${Math.round(c.surface_pressure)} hPa`,
+            null, null, 0.22)}
+
+        ${card(t('cloudCover'),
+            `${c.cloud_cover}<span class="u">%</span>`,
+            c.cloud_cover < 20 ? t('mostlyClear') : c.cloud_cover < 60 ? t('partlyCloudy') : t('overcast'),
+            c.cloud_cover, 'bar-blue', 0.26)}
+
+        ${card(t('visibility'),
+            `${visKm}<span class="u">km</span>`,
+            visLabel(c.visibility),
+            c.visibility != null ? Math.min(c.visibility / 100, 100) : null, 'bar-green', 0.30)}
+
+        ${card(t('precip'),
+            `${c.precipitation.toFixed(1)}<span class="u">mm</span>`,
+            `${t('rain')} ${c.rain.toFixed(1)} mm &nbsp;·&nbsp; ${t('snow')} ${c.snowfall.toFixed(1)} mm`,
+            null, null, 0.34)}
+
+        ${card(t('showers'),
+            `${c.showers.toFixed(1)}<span class="u">mm</span>`,
+            precipProb != null ? `${t('precipProb')} ${precipProb}%` : t('convShowers'),
+            precipProb, 'bar-accent', 0.38)}
+
+        ${card(t('uvIndex'),
+            uv !== null
+                ? `<span class="${uvCat.cls}">${uv.toFixed(1)}</span>`
+                : `<span class="val-green">—</span>`,
+            uvCat ? uvCat.label : '—',
+            uv !== null ? Math.min(uv * 9, 100) : null, 'bar-gold', 0.42)}
+
+        ${card(t('dewPoint'),
+            `${Math.round(c.dew_point_2m)}<span class="u">°C</span>`,
+            c.dew_point_2m > 20 ? t('uncomfortable') : c.dew_point_2m > 15 ? t('humid') : c.dew_point_2m > 10 ? t('comfortable') : t('dry'),
+            null, null, 0.46)}
+
+        ${card(t('apparentTemp'),
+            `${Math.round(c.apparent_temperature)}<span class="u">°C</span>`,
+            t('perceivedTemp'),
+            null, null, 0.50)}
+
+        ${card(t('swRad'),
+            `${swRad}<span class="u">W/m²</span>`,
+            swRad > 600 ? t('intense') : swRad > 300 ? t('moderate') : swRad > 50 ? t('low') : t('minimal'),
+            swRad !== '—' ? Math.min(swRad / 10, 100) : null, 'bar-gold', 0.54)}
+
+        ${card(t('snowfall'),
+            `${c.snowfall.toFixed(1)}<span class="u">cm</span>`,
+            t('snowDepth'),
+            null, null, 0.58)}
+
+        ${card(t('wmoCode'),
+            `<span style="font-size:20px">${w.icon}</span> ${c.weather_code}`,
+            w.text,
+            null, null, 0.62)}
+    </div>
+
+    <div class="section-head fi" style="animation-delay:0.64s;margin-top:14px">
+        <div class="section-title">${t('history24h')}</div>
+        <div class="section-line"></div>
+    </div>
+
+    <div class="charts-grid fi" style="animation-delay:0.66s">
+        <div class="chart-card">
+            <div class="chart-head">
+                <div class="chart-title">${t('temperature')}</div>
+                <div class="chart-range">${tempH.values.length ? Math.min(...tempH.values).toFixed(1) + '° – ' + Math.max(...tempH.values).toFixed(1) + '°C' : ''}</div>
+            </div>
+            ${lineChart(tempH.times, tempH.values, tempColor, '°', 'grad-temp')}
+        </div>
+        <div class="chart-card">
+            <div class="chart-head">
+                <div class="chart-title">${t('swRad')}</div>
+                <div class="chart-range">${radH.values.length ? '0 – ' + Math.max(...radH.values).toFixed(0) + ' W/m²' : ''}</div>
+            </div>
+            ${lineChart(radH.times, radH.values, radColor, 'W', 'grad-rad')}
+        </div>
+    </div>
+
+    <div class="footer fi" style="animation-delay:0.72s">
+        <div class="footer-text">${lat.toFixed(4)}° ${lat >= 0 ? 'N' : 'S'} &nbsp; ${Math.abs(lon).toFixed(4)}° ${lon >= 0 ? 'E' : 'W'}</div>
+        <div class="footer-text"><span class="status-dot"></span>Live · Open-Meteo API</div>
+        <div class="footer-text" id="update-ts">${t('updated')} ${new Date().toLocaleTimeString()}</div>
+    </div>
+    `;
+
+    document.getElementById('root').innerHTML = html;
+
+    // Animate bars after render
+    requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+            document.querySelectorAll('.bar-inner[data-pct]').forEach(el => {
+                el.style.width = el.dataset.pct + '%';
+            });
+        });
+    });
+}
+
+/* ── 7-segment SVG clock ────────────────────────── */
+function seg7svg(timeStr) {
+    const DW=44, H=80, T=7.5, G=2.5, SP=6, CW=24;
+    const dark = document.documentElement.dataset.theme !== 'light';
+    const ON  = dark ? '#4ade80' : '#15803d';
+    const OFF = dark ? 'rgba(74,222,128,0.09)' : 'rgba(21,128,61,0.10)';
+    const GLOW= dark ? 'rgba(74,222,128,0.70)' : 'rgba(21,128,61,0.40)';
+    const MAP={
+        '0':[1,1,1,1,1,1,0],'1':[0,1,1,0,0,0,0],'2':[1,1,0,1,1,0,1],
+        '3':[1,1,1,1,0,0,1],'4':[0,1,1,0,0,1,1],'5':[1,0,1,1,0,1,1],
+        '6':[1,0,1,1,1,1,1],'7':[1,1,1,0,0,0,0],'8':[1,1,1,1,1,1,1],
+        '9':[1,1,1,1,0,1,1]
+    };
+    const f = n => n.toFixed(1);
+    const hp = (x1,x2,cy) => {
+        const s=T*.4;
+        return `${f(x1+s)},${f(cy-T/2)} ${f(x2-s)},${f(cy-T/2)} ${f(x2)},${f(cy)} ${f(x2-s)},${f(cy+T/2)} ${f(x1+s)},${f(cy+T/2)} ${f(x1)},${f(cy)}`;
+    };
+    const vp = (cx,y1,y2) => {
+        const s=T*.4;
+        return `${f(cx)},${f(y1)} ${f(cx+T/2)},${f(y1+s)} ${f(cx+T/2)},${f(y2-s)} ${f(cx)},${f(y2)} ${f(cx-T/2)},${f(y2-s)} ${f(cx-T/2)},${f(y1+s)}`;
+    };
+    function digit(ch, ox) {
+        if (!(ch in MAP)) return '';
+        const [a,b,c,d,e,fn,g] = MAP[ch];
+        const xl=ox+G+T/2, xr=ox+DW-G-T/2;
+        const xi1=xl+T/2+1, xi2=xr-T/2-1;
+        const yt=G+T/2, ym=H/2, yb=H-G-T/2;
+        const yv1=G+T+1, yv2=H/2-G-1, yv3=H/2+G+1, yv4=H-G-T-1;
+        return [
+            [hp(xi1,xi2,yt),a],[vp(xr,yv1,yv2),b],[vp(xr,yv3,yv4),c],
+            [hp(xi1,xi2,yb),d],[vp(xl,yv3,yv4),e],[vp(xl,yv1,yv2),fn],
+            [hp(xi1,xi2,ym),g]
+        ].map(([pts,on])=>`<polygon points="${pts}" fill="${on?ON:OFF}"/>`).join('');
+    }
+    const chars=[...timeStr];
+    let totalW=0;
+    chars.forEach((ch,i)=>{ totalW+=(ch===':'?CW:DW)+(i<chars.length-1?SP:0); });
+    let x=0, html='';
+    chars.forEach((ch,i)=>{
+        if (ch===':') {
+            const cx=x+CW/2;
+            html+=`<circle cx="${f(cx)}" cy="${f(H*.32)}" r="${f(T/2+.5)}" fill="${ON}"/>`;
+            html+=`<circle cx="${f(cx)}" cy="${f(H*.68)}" r="${f(T/2+.5)}" fill="${ON}"/>`;
+            x+=CW;
+        } else { html+=digit(ch,x); x+=DW; }
+        if (i<chars.length-1) x+=SP;
+    });
+    return `<svg viewBox="0 0 ${totalW} ${H}" xmlns="http://www.w3.org/2000/svg" style="width:${totalW}px;height:${H}px;display:block;filter:drop-shadow(0 0 8px ${GLOW})">${html}</svg>`;
+}
+
+/* ── Clock ──────────────────────────────────────── */
+function tick() {
+    const now = new Date();
+    const el = document.getElementById('live-clock-large');
+    if (el) el.textContent = now.toLocaleTimeString('en-US', { hour:'2-digit', minute:'2-digit', second:'2-digit' });
+    const seg = document.getElementById('seg7-clock');
+    if (seg) seg.innerHTML = seg7svg(now.toLocaleTimeString([], { hour:'2-digit', minute:'2-digit', second:'2-digit', hour12:false }));
+}
+setInterval(tick, 1000);
+tick();
+
+/* ── Reverse geocode ────────────────────────────── */
+async function geocode(lat, lon) {
+    try {
+        const r = await fetch(`https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lon}&format=json`, {
+            headers: { 'Accept-Language': navigator.language }
+        });
+        const d = await r.json();
+        const a = d.address;
+        return (a.city || a.town || a.village || a.suburb || a.county || a.state || 'Unknown').toUpperCase();
+    } catch { return 'UNKNOWN LOCATION'; }
+}
+
+/* ── Fetch weather ──────────────────────────────── */
+async function fetchWeather(lat, lon) {
+    const vars = [
+        'temperature_2m','relative_humidity_2m','dew_point_2m',
+        'apparent_temperature','is_day','precipitation','rain',
+        'showers','snowfall','weather_code','cloud_cover',
+        'pressure_msl','surface_pressure','wind_speed_10m',
+        'wind_direction_10m','wind_gusts_10m','visibility',
+        'shortwave_radiation'
+    ].join(',');
+
+    const url = `https://api.open-meteo.com/v1/forecast`
+              + `?latitude=${lat}&longitude=${lon}`
+              + `&current=${vars}`
+              + `&hourly=uv_index,precipitation_probability,temperature_2m,shortwave_radiation`
+              + `&past_days=1&forecast_days=1&timezone=auto`;
+
+    const r = await fetch(url);
+    if (!r.ok) throw new Error(`Open-Meteo API ${r.status}`);
+    return r.json();
+}
+
+/* ── Init ───────────────────────────────────────── */
+async function init(lat, lon, fallback) {
+    document.getElementById('loc-coords').textContent =
+        fallback
+            ? t('geoDefault')
+            : `${Math.abs(lat).toFixed(4)}° ${lat >= 0 ? 'N' : 'S'}, ${Math.abs(lon).toFixed(4)}° ${lon >= 0 ? 'E' : 'W'}`;
+
+    try {
+        const [data, name] = await Promise.all([
+            fetchWeather(lat, lon),
+            geocode(lat, lon)
+        ]);
+        document.getElementById('loc-name').textContent = name + (fallback ? ' (DEFAULT)' : '');
+        document.getElementById('loc-coords').textContent =
+            `${Math.abs(lat).toFixed(4)}° ${lat >= 0 ? 'N' : 'S'} · ${Math.abs(lon).toFixed(4)}° ${lon >= 0 ? 'E' : 'W'}`;
+        render(data, name, lat, lon);
+    } catch (e) {
+        document.getElementById('root').innerHTML = `
+            <div class="state-view">
+                <div style="font-size:48px">⚡</div>
+                <div class="error-label">${t('signalLost')}<br>
+                <span style="font-size:11px;color:var(--text-dim)">${e.message}</span></div>
+            </div>`;
+    }
+}
+
+/* ── Geolocation ────────────────────────────────── */
+if ('geolocation' in navigator) {
+    navigator.geolocation.getCurrentPosition(
+        pos => init(pos.coords.latitude, pos.coords.longitude, false),
+        ()  => init(52.52, 13.405, true),   // fallback: Berlin
+        { timeout: 9000, enableHighAccuracy: false }
+    );
+} else {
+    init(52.52, 13.405, true);
+}
+</script>
+</body>
+</html>
