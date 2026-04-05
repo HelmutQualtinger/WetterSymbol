@@ -730,7 +730,10 @@
                 <div class="dot"></div>
             </div>
             <div class="state-label" id="state-label">Acquiring Signal</div>
-            <button class="loc-btn" id="loc-btn" style="display:none" onclick="requestLocation()">&#x1F4CD; Standort freigeben</button>
+            <div id="loc-actions" style="display:none;display:none;flex-direction:column;align-items:center;gap:8px;margin-top:8px">
+                <button class="loc-btn" onclick="requestLocation()">&#x1F4CD; Standort freigeben</button>
+                <button class="loc-btn" style="background:var(--bg-card);border:1px solid var(--border);color:var(--text-dim);font-size:10px;padding:7px 16px" onclick="init(52.52,13.405,true)">Berlin verwenden</button>
+            </div>
         </div>
     </div>
 </div>
@@ -1604,53 +1607,38 @@ async function init(lat, lon, fallback) {
 }
 
 /* ── Geolocation ────────────────────────────────── */
-function requestLocation() {
-    const btn = document.getElementById('loc-btn');
+function showLocActions() {
+    const el = document.getElementById('loc-actions');
+    if (el) { el.style.display = 'flex'; }
     const lbl = document.getElementById('state-label');
-    if (btn) btn.style.display = 'none';
+    if (lbl) lbl.textContent = t('geoDefault');
+}
+
+function requestLocation() {
+    const el = document.getElementById('loc-actions');
+    if (el) el.style.display = 'none';
+    const lbl = document.getElementById('state-label');
     if (lbl) lbl.textContent = t('acquiring');
 
-    if (!('geolocation' in navigator)) {
-        init(52.52, 13.405, true);
-        return;
-    }
+    if (!('geolocation' in navigator)) { showLocActions(); return; }
 
     navigator.geolocation.getCurrentPosition(
         pos => init(pos.coords.latitude, pos.coords.longitude, false),
-        err => {
-            // Show button so user can retry with a tap (needed on Android HTTP / denied)
-            const b = document.getElementById('loc-btn');
-            const l = document.getElementById('state-label');
-            if (l) l.textContent = t('geoDefault');
-            if (b) b.style.display = 'inline-block';
-            // Also fall back automatically after short delay
-            setTimeout(() => {
-                if (document.getElementById('loc-btn')) init(52.52, 13.405, true);
-            }, 3500);
-        },
-        { timeout: 9000, enableHighAccuracy: false }
+        ()  => showLocActions(),
+        { timeout: 10000, enableHighAccuracy: false }
     );
 }
 
-// Auto-try on load; on Android HTTP the prompt may not appear — button is fallback
+// Auto-try on load; show buttons if no answer within 5s or on error
 (function startGeo() {
-    const btn = document.getElementById('loc-btn');
-    // Show button after 3s if still waiting (covers silent block on Android HTTP)
-    const showTimer = setTimeout(() => {
-        const b = document.getElementById('loc-btn');
-        if (b) b.style.display = 'inline-block';
-    }, 3000);
+    if (!('geolocation' in navigator)) { showLocActions(); return; }
 
-    if (!('geolocation' in navigator)) {
-        clearTimeout(showTimer);
-        init(52.52, 13.405, true);
-        return;
-    }
+    const showTimer = setTimeout(showLocActions, 5000);
 
     navigator.geolocation.getCurrentPosition(
         pos => { clearTimeout(showTimer); init(pos.coords.latitude, pos.coords.longitude, false); },
-        ()  => { clearTimeout(showTimer); requestLocation(); },
-        { timeout: 9000, enableHighAccuracy: false }
+        ()   => { clearTimeout(showTimer); showLocActions(); },
+        { timeout: 10000, enableHighAccuracy: false }
     );
 })();
 </script>
