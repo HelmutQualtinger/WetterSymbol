@@ -1491,18 +1491,16 @@ function render(data, locName, lat, lon) {
 }
 
 /* ── 7-segment SVG clock ────────────────────────── */
-function seg7svg(timeStr) {
+const SEG7_MAP = {
+    '0':[1,1,1,1,1,1,0],'1':[0,1,1,0,0,0,0],'2':[1,1,0,1,1,0,1],
+    '3':[1,1,1,1,0,0,1],'4':[0,1,1,0,0,1,1],'5':[1,0,1,1,0,1,1],
+    '6':[1,0,1,1,1,1,1],'7':[1,1,1,0,0,0,0],'8':[1,1,1,1,1,1,1],
+    '9':[1,1,1,1,0,1,1]
+};
+
+// Build SVG DOM structure once; only update fill attributes each tick
+function seg7build(container) {
     const DW=44, H=80, T=7.5, G=2.5, SP=6, CW=24;
-    const dark = document.documentElement.dataset.theme !== 'light';
-    const ON  = dark ? '#4ade80' : '#15803d';
-    const OFF = dark ? 'rgba(74,222,128,0.09)' : 'rgba(21,128,61,0.10)';
-    const GLOW= dark ? 'rgba(74,222,128,0.70)' : 'rgba(21,128,61,0.40)';
-    const MAP={
-        '0':[1,1,1,1,1,1,0],'1':[0,1,1,0,0,0,0],'2':[1,1,0,1,1,0,1],
-        '3':[1,1,1,1,0,0,1],'4':[0,1,1,0,0,1,1],'5':[1,0,1,1,0,1,1],
-        '6':[1,0,1,1,1,1,1],'7':[1,1,1,0,0,0,0],'8':[1,1,1,1,1,1,1],
-        '9':[1,1,1,1,0,1,1]
-    };
     const f = n => n.toFixed(1);
     const hp = (x1,x2,cy) => {
         const s=T*.4;
@@ -1512,42 +1510,85 @@ function seg7svg(timeStr) {
         const s=T*.4;
         return `${f(cx)},${f(y1)} ${f(cx+T/2)},${f(y1+s)} ${f(cx+T/2)},${f(y2-s)} ${f(cx)},${f(y2)} ${f(cx-T/2)},${f(y2-s)} ${f(cx-T/2)},${f(y1+s)}`;
     };
-    function digit(ch, ox) {
-        if (!(ch in MAP)) return '';
-        const [a,b,c,d,e,fn,g] = MAP[ch];
-        const xl=ox+G+T/2, xr=ox+DW-G-T/2;
-        const xi1=xl+T/2+1, xi2=xr-T/2-1;
-        const yt=G+T/2, ym=H/2, yb=H-G-T/2;
-        const yv1=G+T+1, yv2=H/2-G-1, yv3=H/2+G+1, yv4=H-G-T-1;
-        return [
-            [hp(xi1,xi2,yt),a],[vp(xr,yv1,yv2),b],[vp(xr,yv3,yv4),c],
-            [hp(xi1,xi2,yb),d],[vp(xl,yv3,yv4),e],[vp(xl,yv1,yv2),fn],
-            [hp(xi1,xi2,ym),g]
-        ].map(([pts,on])=>`<polygon points="${pts}" fill="${on?ON:OFF}"/>`).join('');
-    }
-    const chars=[...timeStr];
-    let totalW=0;
-    chars.forEach((ch,i)=>{ totalW+=(ch===':'?CW:DW)+(i<chars.length-1?SP:0); });
-    let x=0, html='';
-    chars.forEach((ch,i)=>{
-        if (ch===':') {
-            const cx=x+CW/2;
-            html+=`<circle cx="${f(cx)}" cy="${f(H*.32)}" r="${f(T/2+.5)}" fill="${ON}"/>`;
-            html+=`<circle cx="${f(cx)}" cy="${f(H*.68)}" r="${f(T/2+.5)}" fill="${ON}"/>`;
-            x+=CW;
-        } else { html+=digit(ch,x); x+=DW; }
-        if (i<chars.length-1) x+=SP;
+    // Template: HH:MM:SS = digits 0-7, colons at positions 2 and 5
+    const template = '00:00:00';
+    const chars = [...template];
+    let totalW = 0;
+    chars.forEach((ch,i) => { totalW += (ch===':'?CW:DW) + (i<chars.length-1?SP:0); });
+
+    let x = 0, html = '', dIdx = 0;
+    chars.forEach((ch, i) => {
+        if (ch === ':') {
+            const cx = x + CW/2;
+            html += `<circle class="c${dIdx}" cx="${f(cx)}" cy="${f(H*.32)}" r="${f(T/2+.5)}"/>`;
+            html += `<circle class="c${dIdx}" cx="${f(cx)}" cy="${f(H*.68)}" r="${f(T/2+.5)}"/>`;
+            dIdx++;
+            x += CW;
+        } else {
+            const xl=x+G+T/2, xr=x+DW-G-T/2;
+            const xi1=xl+T/2+1, xi2=xr-T/2-1;
+            const yt=G+T/2, ym=H/2, yb=H-G-T/2;
+            const yv1=G+T+1, yv2=H/2-G-1, yv3=H/2+G+1, yv4=H-G-T-1;
+            [hp(xi1,xi2,yt),vp(xr,yv1,yv2),vp(xr,yv3,yv4),
+             hp(xi1,xi2,yb),vp(xl,yv3,yv4),vp(xl,yv1,yv2),hp(xi1,xi2,ym)
+            ].forEach((pts, si) => {
+                html += `<polygon class="d${dIdx}s${si}" points="${pts}"/>`;
+            });
+            dIdx++;
+            x += DW;
+        }
+        if (i < chars.length-1) x += SP;
     });
-    return `<svg viewBox="0 0 ${totalW} ${H}" xmlns="http://www.w3.org/2000/svg" style="width:${totalW}px;height:${H}px;display:block;filter:drop-shadow(0 0 8px ${GLOW})">${html}</svg>`;
+    container.innerHTML = `<svg viewBox="0 0 ${totalW} ${H}" xmlns="http://www.w3.org/2000/svg" style="display:block">${html}</svg>`;
 }
+
+function seg7update(container, timeStr, dark) {
+    const ON  = dark ? '#4ade80' : '#15803d';
+    const OFF = dark ? 'rgba(74,222,128,0.09)' : 'rgba(21,128,61,0.10)';
+    const chars = [...timeStr];
+    let dIdx = 0;
+    chars.forEach(ch => {
+        if (ch === ':') {
+            container.querySelectorAll(`.c${dIdx}`).forEach(el => el.setAttribute('fill', ON));
+            dIdx++;
+        } else {
+            const bits = SEG7_MAP[ch] || [0,0,0,0,0,0,0];
+            bits.forEach((on, si) => {
+                const el = container.querySelector(`.d${dIdx}s${si}`);
+                if (el) el.setAttribute('fill', on ? ON : OFF);
+            });
+            dIdx++;
+        }
+    });
+    // Update glow filter on theme change
+    const svg = container.querySelector('svg');
+    if (svg) {
+        const GLOW = dark ? 'rgba(74,222,128,0.70)' : 'rgba(21,128,61,0.40)';
+        svg.style.filter = `drop-shadow(0 0 8px ${GLOW})`;
+    }
+}
+
+let seg7Built = false;
+let seg7LastDark = null;
 
 /* ── Clock ──────────────────────────────────────── */
 function tick() {
     const now = new Date();
     const el = document.getElementById('live-clock-large');
     if (el) el.textContent = now.toLocaleTimeString('en-US', { hour:'2-digit', minute:'2-digit', second:'2-digit' });
+
     const seg = document.getElementById('seg7-clock');
-    if (seg) seg.innerHTML = seg7svg(now.toLocaleTimeString([], { hour:'2-digit', minute:'2-digit', second:'2-digit', hour12:false }));
+    if (!seg) return;
+    const dark = document.documentElement.dataset.theme !== 'light';
+    const timeStr = now.toLocaleTimeString([], { hour:'2-digit', minute:'2-digit', second:'2-digit', hour12:false });
+
+    // Build SVG structure once (or rebuild if seg7-clock was replaced by render())
+    if (!seg7Built || !seg.querySelector('svg') || seg7LastDark !== dark) {
+        seg7build(seg);
+        seg7Built = true;
+        seg7LastDark = dark;
+    }
+    seg7update(seg, timeStr, dark);
 }
 setInterval(tick, 1000);
 tick();
