@@ -570,6 +570,22 @@
         50% { opacity: 0.35; }
     }
 
+    /* ── Location button ─────────────────────────── */
+    .loc-btn {
+        margin-top: 8px;
+        background: var(--accent);
+        color: #fff;
+        border: none;
+        border-radius: 8px;
+        padding: 10px 20px;
+        font-family: 'JetBrains Mono', monospace;
+        font-size: 12px;
+        letter-spacing: 0.1em;
+        cursor: pointer;
+        transition: opacity 0.2s;
+    }
+    .loc-btn:active { opacity: 0.75; }
+
     /* ── Loading & Error ─────────────────────────── */
     .state-view {
         flex: 1;
@@ -713,7 +729,8 @@
                 <div class="dot"></div>
                 <div class="dot"></div>
             </div>
-            <div class="state-label">Acquiring Signal</div>
+            <div class="state-label" id="state-label">Acquiring Signal</div>
+            <button class="loc-btn" id="loc-btn" style="display:none" onclick="requestLocation()">&#x1F4CD; Standort freigeben</button>
         </div>
     </div>
 </div>
@@ -1209,11 +1226,12 @@ function compassSVG(deg, dark) {
 }
 
 /* ── Card builders ──────────────────────────────── */
-function card(label, valueHTML, sub, barPct, barCls, delay) {
+function card(label, valueHTML, sub, barPct, barCls, delay, cls='', accent='') {
+    const accentStyle = accent ? `--c-accent:${accent};` : '';
     const bar = (barPct != null)
         ? `<div class="bar"><div class="bar-inner ${barCls || 'bar-accent'}" style="width:0" data-pct="${Math.min(barPct,100)}"></div></div>`
         : '';
-    return `<div class="card fi" style="animation-delay:${delay}s">
+    return `<div class="card fi ${cls}" style="animation-delay:${delay}s;${accentStyle}">
         <div class="card-label">${label}</div>
         <div class="card-value">${valueHTML}</div>
         ${sub ? `<div class="card-sub">${sub}</div>` : ''}
@@ -1352,6 +1370,7 @@ function render(data, locName, lat, lon) {
     <div class="rule fi" style="animation-delay:0.12s"></div>
 
     <div class="section-head fi" style="animation-delay:0.14s">
+        <div class="section-dot"></div>
         <div class="section-title">${t('currentCond')}</div>
         <div class="section-line"></div>
     </div>
@@ -1360,44 +1379,44 @@ function render(data, locName, lat, lon) {
         ${card(t('humidity'),
             `${c.relative_humidity_2m}<span class="u">%</span>`,
             t('relHumidity'),
-            c.relative_humidity_2m, 'bar-green', 0.18)}
-
-        ${card(t('pressureMSL'),
-            `${Math.round(c.pressure_msl)}<span class="u">hPa</span>`,
-            `${t('surface')}: ${Math.round(c.surface_pressure)} hPa`,
-            null, null, 0.22)}
-
-        ${card(t('cloudCover'),
-            `${c.cloud_cover}<span class="u">%</span>`,
-            c.cloud_cover < 20 ? t('mostlyClear') : c.cloud_cover < 60 ? t('partlyCloudy') : t('overcast'),
-            c.cloud_cover, 'bar-blue', 0.26)}
-
-        ${card(t('visibility'),
-            `${visKm}<span class="u">km</span>`,
-            visLabel(c.visibility),
-            c.visibility != null ? Math.min(c.visibility / 100, 100) : null, 'bar-green', 0.30)}
-
-        ${card(t('precip'),
-            `${c.precipitation.toFixed(1)}<span class="u">mm</span>`,
-            `${t('rain')} ${c.rain.toFixed(1)} mm &nbsp;·&nbsp; ${t('snow')} ${c.snowfall.toFixed(1)} mm`,
-            null, null, 0.34)}
-
-        ${card(t('showers'),
-            `${c.showers.toFixed(1)}<span class="u">mm</span>`,
-            precipProb != null ? `${t('precipProb')} ${precipProb}%` : t('convShowers'),
-            precipProb, 'bar-accent', 0.38)}
+            c.relative_humidity_2m, 'bar-green', 0.18, 'card--w2 card--feat', 'var(--green)')}
 
         ${card(t('uvIndex'),
             uv !== null
                 ? `<span class="${uvCat.cls}">${uv.toFixed(1)}</span>`
                 : `<span class="val-green">—</span>`,
             uvCat ? uvCat.label : '—',
-            uv !== null ? Math.min(uv * 9, 100) : null, 'bar-gold', 0.42)}
+            uv !== null ? Math.min(uv * 9, 100) : null, 'bar-gold', 0.22, '', 'var(--gold)')}
+
+        ${card(t('cloudCover'),
+            `${c.cloud_cover}<span class="u">%</span>`,
+            c.cloud_cover < 20 ? t('mostlyClear') : c.cloud_cover < 60 ? t('partlyCloudy') : t('overcast'),
+            c.cloud_cover, 'bar-blue', 0.26, '', 'var(--blue)')}
+
+        ${card(t('pressureMSL'),
+            `${Math.round(c.pressure_msl)}<span class="u">hPa</span>`,
+            `${t('surface')}: ${Math.round(c.surface_pressure)} hPa`,
+            null, null, 0.30, '', 'var(--blue)')}
+
+        ${card(t('visibility'),
+            `${visKm}<span class="u">km</span>`,
+            visLabel(c.visibility),
+            c.visibility != null ? Math.min(c.visibility / 100, 100) : null, 'bar-green', 0.34, '', 'var(--green)')}
+
+        ${card(t('precip'),
+            `${c.precipitation.toFixed(1)}<span class="u">mm</span>`,
+            `${t('rain')} ${c.rain.toFixed(1)} mm &nbsp;·&nbsp; ${t('snow')} ${c.snowfall.toFixed(1)} mm`,
+            null, null, 0.38, 'card--w2', 'var(--blue)')}
+
+        ${card(t('showers'),
+            `${c.showers.toFixed(1)}<span class="u">mm</span>`,
+            precipProb != null ? `${t('precipProb')} ${precipProb}%` : t('convShowers'),
+            precipProb, 'bar-accent', 0.42, '', 'var(--accent)')}
 
         ${card(t('dewPoint'),
             `${Math.round(c.dew_point_2m)}<span class="u">°C</span>`,
             c.dew_point_2m > 20 ? t('uncomfortable') : c.dew_point_2m > 15 ? t('humid') : c.dew_point_2m > 10 ? t('comfortable') : t('dry'),
-            null, null, 0.46)}
+            null, null, 0.46, '', 'var(--blue)')}
 
         ${card(t('apparentTemp'),
             `${Math.round(c.apparent_temperature)}<span class="u">°C</span>`,
@@ -1407,20 +1426,21 @@ function render(data, locName, lat, lon) {
         ${card(t('swRad'),
             `${swRad}<span class="u">W/m²</span>`,
             swRad > 600 ? t('intense') : swRad > 300 ? t('moderate') : swRad > 50 ? t('low') : t('minimal'),
-            swRad !== '—' ? Math.min(swRad / 10, 100) : null, 'bar-gold', 0.54)}
+            swRad !== '—' ? Math.min(swRad / 10, 100) : null, 'bar-gold', 0.54, '', 'var(--gold)')}
 
         ${card(t('snowfall'),
             `${c.snowfall.toFixed(1)}<span class="u">cm</span>`,
             t('snowDepth'),
-            null, null, 0.58)}
+            null, null, 0.58, 'card--w2', 'var(--blue)')}
 
         ${card(t('wmoCode'),
             `<span style="font-size:20px">${w.icon}</span> ${c.weather_code}`,
             w.text,
-            null, null, 0.62)}
+            null, null, 0.62, 'card--w2', 'var(--accent)')}
     </div>
 
     <div class="section-head fi" style="animation-delay:0.64s;margin-top:14px">
+        <div class="section-dot"></div>
         <div class="section-title">${t('history24h')}</div>
         <div class="section-line"></div>
     </div>
@@ -1584,15 +1604,55 @@ async function init(lat, lon, fallback) {
 }
 
 /* ── Geolocation ────────────────────────────────── */
-if ('geolocation' in navigator) {
+function requestLocation() {
+    const btn = document.getElementById('loc-btn');
+    const lbl = document.getElementById('state-label');
+    if (btn) btn.style.display = 'none';
+    if (lbl) lbl.textContent = t('acquiring');
+
+    if (!('geolocation' in navigator)) {
+        init(52.52, 13.405, true);
+        return;
+    }
+
     navigator.geolocation.getCurrentPosition(
         pos => init(pos.coords.latitude, pos.coords.longitude, false),
-        ()  => init(52.52, 13.405, true),   // fallback: Berlin
+        err => {
+            // Show button so user can retry with a tap (needed on Android HTTP / denied)
+            const b = document.getElementById('loc-btn');
+            const l = document.getElementById('state-label');
+            if (l) l.textContent = t('geoDefault');
+            if (b) b.style.display = 'inline-block';
+            // Also fall back automatically after short delay
+            setTimeout(() => {
+                if (document.getElementById('loc-btn')) init(52.52, 13.405, true);
+            }, 3500);
+        },
         { timeout: 9000, enableHighAccuracy: false }
     );
-} else {
-    init(52.52, 13.405, true);
 }
+
+// Auto-try on load; on Android HTTP the prompt may not appear — button is fallback
+(function startGeo() {
+    const btn = document.getElementById('loc-btn');
+    // Show button after 3s if still waiting (covers silent block on Android HTTP)
+    const showTimer = setTimeout(() => {
+        const b = document.getElementById('loc-btn');
+        if (b) b.style.display = 'inline-block';
+    }, 3000);
+
+    if (!('geolocation' in navigator)) {
+        clearTimeout(showTimer);
+        init(52.52, 13.405, true);
+        return;
+    }
+
+    navigator.geolocation.getCurrentPosition(
+        pos => { clearTimeout(showTimer); init(pos.coords.latitude, pos.coords.longitude, false); },
+        ()  => { clearTimeout(showTimer); requestLocation(); },
+        { timeout: 9000, enableHighAccuracy: false }
+    );
+})();
 </script>
 </body>
 </html>
