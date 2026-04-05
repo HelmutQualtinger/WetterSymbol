@@ -867,6 +867,7 @@
 <script>
 /* ── Theme ──────────────────────────────────────── */
 let lastRenderArgs = null;
+let lastLocationIndex = null; // { country, region } to track selected location
 
 (function initTheme() {
     const saved = localStorage.getItem('meteo-theme') || 'dark';
@@ -1304,7 +1305,12 @@ function setLang(code) {
     if (stateLabel) stateLabel.textContent = t('acquiring');
     const listSpan = document.getElementById('loc-list-btn-text');
     if (listSpan) listSpan.textContent = t('locListBtn');
-    // re-render if data available
+    // re-render if data available — update location name to localized version
+    if (lastRenderArgs && lastLocationIndex) {
+        const loc = LOCATIONS[lastLocationIndex.country].regions[lastLocationIndex.region];
+        const localizedName = rName(loc);
+        lastRenderArgs[1] = localizedName;
+    }
     if (lastRenderArgs) render(...lastRenderArgs);
 }
 
@@ -1872,6 +1878,8 @@ async function fetchWeather(lat, lon) {
 /* ── Init ───────────────────────────────────────── */
 async function init(lat, lon, fallback, fixedName) {
     try {
+        // clear location index if not from menu
+        if (!fixedName) lastLocationIndex = null;
         const [data, geoName] = await Promise.all([
             fetchWeather(lat, lon),
             fixedName ? Promise.resolve(fixedName.toUpperCase()) : geocode(lat, lon)
@@ -2147,6 +2155,16 @@ function toggleLocMenuInit(btnEl) { toggleLocMenu(btnEl); }
 
 function pickLocation(lat, lon, name) {
     closeLocMenu();
+    // store location indices for language switching
+    for (let c = 0; c < LOCATIONS.length; c++) {
+        for (let r = 0; r < LOCATIONS[c].regions.length; r++) {
+            const region = LOCATIONS[c].regions[r];
+            if (region.lat === lat && region.lon === lon) {
+                lastLocationIndex = { country: c, region: r };
+                break;
+            }
+        }
+    }
     init(lat, lon, true, name);
 }
 
